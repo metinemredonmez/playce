@@ -1,0 +1,138 @@
+// Playce veri modeli.
+// Eksen: Genre (müzik türü) — radyo istasyonlarını, etkinlikleri, mekânları ve sanatçıları birbirine bağlar.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+}
+
+/// Verinin nereden geldiği. DEMO kayıtlar uygulamada "DEMO" rozetiyle gösterilir.
+enum DataSource {
+  DEMO
+  ADMIN
+  IMPORT
+}
+
+model Genre {
+  id       String @id @default(cuid())
+  slug     String @unique
+  name     String
+  color    String
+  /// radio-browser.info araması için tag (ör. "deep house")
+  radioTag String
+  sort     Int    @default(0)
+
+  stations Station[]
+  events   Event[]
+  venues   Venue[]
+  artists  Artist[]
+}
+
+model Station {
+  id          String  @id @default(cuid())
+  slug        String  @unique
+  name        String
+  streamUrl   String
+  homepage    String?
+  logoUrl     String?
+  country     String?
+  /// Yayın ICY "şu an çalan" bilgisi veriyor mu (HLS yayınlar vermez)
+  hasMetadata Boolean @default(true)
+  sort        Int     @default(0)
+
+  genreId String
+  genre   Genre  @relation(fields: [genreId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([genreId])
+}
+
+model Venue {
+  id          String     @id @default(cuid())
+  slug        String     @unique
+  name        String
+  district    String
+  address     String?
+  lat         Float?
+  lng         Float?
+  description String?
+  coverUrl    String?
+  instagram   String?
+  /// 1-4 arası fiyat seviyesi (₺ … ₺₺₺₺)
+  priceLevel  Int?
+  source      DataSource @default(ADMIN)
+
+  genres Genre[]
+  events Event[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Artist {
+  id       String   @id @default(cuid())
+  slug     String   @unique
+  name     String
+  /// ICY başlığında farklı yazılışlar (ör. "Duman" / "DUMAN")
+  aliases  String[] @default([])
+  imageUrl String?
+  bio      String?
+
+  genres Genre[]
+  events EventArtist[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Event {
+  id          String      @id @default(cuid())
+  slug        String      @unique
+  title       String
+  description String?
+  coverUrl    String?
+  startsAt    DateTime
+  endsAt      DateTime?
+  /// Para = minor unit (kuruş). 450 TL = 45000.
+  priceFrom   Int?
+  currency    String      @default("TRY")
+  ticketUrl   String?
+  status      EventStatus @default(PUBLISHED)
+  source      DataSource  @default(ADMIN)
+
+  venueId String
+  venue   Venue  @relation(fields: [venueId], references: [id], onDelete: Cascade)
+
+  genres  Genre[]
+  artists EventArtist[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([startsAt])
+  @@index([venueId])
+}
+
+/// Lineup — sort küçük olan headliner.
+model EventArtist {
+  eventId  String
+  artistId String
+  sort     Int    @default(0)
+
+  event  Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  artist Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
+
+  @@id([eventId, artistId])
+  @@index([artistId])
+}
