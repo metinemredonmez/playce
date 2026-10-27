@@ -65,6 +65,7 @@ Her ekran için: **amaç · içerik · durumlar** (yükleniyor = iskelet, boş, 
    - Radyo dinledikçe profil kendiliğinden güçlenir; bağlama yalnız hızlandırır.
    - Bağlantı sonrası özet: "En çok dinlediğin: Dedublüman, Mabel Matiz, Black Coffee · Türlerin: Türkçe Pop %45, Deep House %30…"
 3. **Konum** — "Sana yakın mekânları önce göstermek için" → sistem izni. Reddedilirse semt seçici.
+   **Yaş:** doğum yılı sorulur (yalnız yıl); 18 yaş altı veya yanıtsız kullanıcıya gece hayatı / `ageLimit ≥ 18` içerik gösterilmez (ADR-015).
 4. Bildirim izni burada **sorulmaz**; ilk sanatçı takibinde veya ilk etkinlik kaydında bağlamıyla sorulur (kabul oranı daha yüksek).
 5. Hesap zorunlu değil. Takip/kaydet ilk kez yapılınca "Kaybolmasın, giriş yap" sheet'i (geç → cihazda kalır, girişte birleşir).
 
@@ -112,6 +113,8 @@ Her ekran için: **amaç · içerik · durumlar** (yükleniyor = iskelet, boş, 
 ### 3.8 Etkinlik detayı
 - Kapak (görsel veya tür degradesi), başlık, tür çipleri, durum rozetleri (Şu an / Az kaldı / İptal / Demo).
 - Bilgi satırları: tarih-saat (kapı açılış), mekân (→ mekân), fiyat, yaş sınırı.
+- **Güven kutusu (M17):** satıcı ("Bubilet'te satışta"), toplam fiyat notu (hizmet bedeli dahil mi), iade koşulu, kapı/kıyafet kuralı.
+  Belirli tarihli etkinlikte cayma hakkı olmadığı için iade koşulu kısa ve açık yazılır.
 - **Eşleşme açıklaması:** "%92 senin sesin — Mabel Matiz'i sık dinliyorsun, Türkçe Pop profilinin %45'i".
 - **Sahnede:** lineup çipleri (→ sanatçı, takip et).
 - Eylemler: **Bilet al** (sağlayıcı adıyla: "Biletix'te bilet al" — dış tarayıcı / in-app browser), **Gidiyorum / İlgileniyorum**,

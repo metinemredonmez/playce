@@ -34,7 +34,12 @@ bağlı müzik hesabı       sevdiğin tür ↔ bu geceki        hatırlatma bil
 
 ## Farkımız (tek cümleyle)
 Etkinlik uygulamaları **ne olduğunu**, müzik uygulamaları **ne dinlediğini** bilir; Playce ikisini birleştirip
-**mekânın sesini senin sesinle eşleştirir** — Türkiye'de bunu yapan yok. Ayrıntılı karşılaştırma: [01-rakip-analizi.md](01-rakip-analizi.md).
+**mekânın sesini senin sesinle eşleştirir**.
+- Dünyada mekâna zevk eşleşmesi veren canlı bir ürün bulunamadı.
+- Türkiye'de parçalar dağınık: fizy şarkı tanıyor, Muud etkinlik gösteriyor, BUGECE "bu gece"yi yapıyor, Karnaval radyoyu yapıyor. Hiçbiri döngünün tamamını yapmıyor.
+- Üstüne **reklamsız radyo**, **güven katmanı** (satıcı, toplam fiyat, iade kartın üstünde) ve **yerel tür taksonomisi** (Türkçe rap, arabesk, Anadolu rock, fasıl) ekliyoruz.
+
+Ayrıntılı karşılaştırma: [01-rakip-analizi.md](01-rakip-analizi.md).
 
 ## MVP'nin sınırları
 **İçinde:** İstanbul; canlı radyo; ICY ile sanatçı eşleşmesi; müzik hesabı bağlama / tür seçimi ile ses profili;

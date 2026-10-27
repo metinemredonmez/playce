@@ -24,7 +24,11 @@
 | M13 | Hesap: e-posta OTP, Apple, Google; KVKK onayları, veri indir, hesap sil | — | A M | yeni |
 | M14 | Admin: etkinlik/mekân/sanatçı/istasyon yönetimi, **Eşleşmeyenler kuyruğu**, istasyon sağlığı | — | A P | kısmen |
 | M15 | Organizatör / mekân başvuru formu + moderasyon | Eventbrite organizatör akışı | A P M | yeni |
-| M16 | ICY metni → sanatçı/tür temizleme hattı (alias, MusicBrainz, etiket→tür) | MusicBrainz, Last.fm | A P | kısmen |
+| M16 | ICY metni → sanatçı/tür temizleme hattı (alias, MusicBrainz, etiket→tür) + **Karnaval grubu için Triton now-playing XML** (sanatçı, parça, kapak) | MusicBrainz, Last.fm, Karnaval | A P | kısmen |
+| M17 | **Güven katmanı:** kartta satıcı, toplam fiyat, iade koşulu, yaş / kapı / kıyafet kuralı | TR biletçi şikâyetlerinin tersi | A P M | yeni |
+| M18 | **18+ kapısı ve alkol mevzuatı moderasyonu** (7584 sayılı Kanun): alkol promosyonu, markalı/sponsorlu gece yok; görsel onayı | Yasal zorunluluk | A P M | yeni |
+| M19 | **Yerel tür taksonomisi:** Türkçe Rap, Arabesk, Anadolu Rock, Türkü Bar, Fasıl birinci sınıf türler | TR boşluğu | A P | yeni |
+| M20 | **Reklamsız radyo** (Playce radyodan para kazanmaz) | TRT Dinle (en memnun), KRAL/Karnaval şikâyetleri | M | ✅ |
 
 ### S — Olmalı
 | # | Özellik | Nereden ilham | Katman |
@@ -37,6 +41,10 @@
 | S6 | Paylaşım linkleri, takvime ekle, yol tarifi | — | A M |
 | S7 | "Takip ettiğin sanatçı şu an radyoda" bildirimi | Playce'a özgü | A M |
 | S8 | "Satışa çıktı / son biletler" uyarısı (kaynak veriyorsa) | Spotify, Ticketmaster | A M |
+| S9 | "Bu gece senin sesin" ana ekran widget'ı | Radar Türkiye | M |
+| S10 | CarPlay / Android Auto | PowerApp (temel beklenti) | M |
+| S11 | Etiket olarak görünen filtreler (seçili filtre çip olarak kalır, tek dokunuşla kaldırılır) | NeYapsak? | M |
+| S12 | Metadata vermeyen önemli istasyonlar için ses tanıma yedeği (sunucuda, istasyon başına) | ACRCloud / AudD | A |
 
 ### C — Olabilir (faz 7+)
 | # | Özellik | Nereden ilham |
@@ -50,6 +58,11 @@
 | C7 | Ortamdaki müziği tanı (ShazamKit — ücretsiz) → mekân/etkinlik | Shazam |
 | C8 | İstanbul haritasında türlere göre parlayan istasyon + mekân görünümü | Radio Garden küresi |
 | C9 | Spotify bağlama (≥ 250 bin MAU'da kota başvurusu) / Spotify veri dosyası yükleme | — |
+| C10 | **Operatör ortaklıkları:** fizy (Turkcell) / Muud (Türk Telekom) zevk verisi | Türkiye'ye özgü |
+| C11 | **B2B kitle analitiği:** mekân/organizatöre "senin sesine uyan kitle" (toplu, anonim) | Playce'a özgü — ana gelir adayı |
+| C12 | **Küçük mekâna ücretsiz listeleme + basit bilet** (iyzico pazaryeri, QR giriş) | Biletino/BUGECE boşluğu |
+| C13 | Sosyal plan: "kim gidiyor", grup eşleşme puanı | Mobilet fikrinin iyisi |
+| C14 | Mekân atmosfer özeti ve yoğunluk tahmini | TAN |
 
 ### W — MVP'de bilinçli olarak yok
 Kendi bilet satışı (ADR-011) · Spotify hesabı bağlama (kota) · İstanbul dışı şehirler · web uygulaması · kullanıcılar arası mesajlaşma.
@@ -87,6 +100,8 @@ Kendi bilet satışı (ADR-011) · Spotify hesabı bağlama (kota) · İstanbul 
 1. Her gece en az **40 yayında etkinlik**, en az **150 mekân** (hepsi konumlu ve ses profilli).
 2. Metadata'lı parçalarda **eşleşme oranı ≥ %50** (en çok çalan 500 sanatçı DB'de).
 3. Tür başına en az **4 çalışan istasyon**; kırık istasyon 3 saatte otomatik gizleniyor.
-4. M1–M16 kabul kriterleri geçti (03/04/05 dokümanlarının §kabul bölümleri).
-5. KVKK metinleri, kullanım koşulları, mağaza gizlilik etiketleri hazır.
-6. Beta'da çökme < %0,5 oturum, ilk ses < 3 sn.
+4. M1–M20 kabul kriterleri geçti (03/04/05 dokümanlarının §kabul bölümleri).
+5. KVKK metinleri (ayrı açık rızalar: konum, pazarlama, müzik profili), yurt dışı aktarım bildirimleri, kullanım koşulları, mağaza gizlilik etiketleri hazır.
+6. **İstasyon izinleri:** uygulamada çalınan Türk istasyonları için yazılı izin veya ortaklık (öncelik Karnaval, Power, Doğuş); izin yoksa istasyon listeden çıkar.
+7. Alkol mevzuatı moderasyon kuralları admin'de uygulanıyor; gece hayatı içeriği 18+ kapısının arkasında.
+8. Beta'da çökme < %0,5 oturum, ilk ses < 3 sn.

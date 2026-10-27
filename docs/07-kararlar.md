@@ -60,3 +60,43 @@ Her önemli karar burada: bağlam → karar → sonuç. Yeni karar en alta, numa
 - **Bağlam:** VPS 5,8 GB RAM (4,4 GB boş), 34 GB disk, 2 çekirdek, Postgres 16, nginx, Node 22; üzerinde hazal ve ogulcanates projeleri var.
 - **Karar:** `playce-api`, `playce-worker`, `playce-admin` pm2 süreçleri; ayrı Postgres veritabanı/kullanıcısı; Redis kurulacak.
   Güncellemede `pm2 restart all` **kullanılmaz** (diğer projeleri de yeniden başlatır) → `pm2 restart playce-*`.
+
+## ADR-015 · Alkol mevzuatı: tanıtım yok, 18+ kapısı
+- **Bağlam:** 7584 sayılı Kanun (RG 20.06.2026) 4250/6'yı değiştirdi.
+  - Alkolün her türlü reklamı ve tanıtımı yasak; tüketimi özendiren kampanya, promosyon ve etkinlik de yasak.
+  - Alkol markaları hiçbir etkinliğe ve hiçbir mecradaki paylaşıma sponsor olamaz.
+  - Kaynak: [Tarım ve Orman Bakanlığı duyurusu](https://www.tarimorman.gov.tr/TADAB/Duyuru/280/Alkollu-Icki-Reklamlarina-Iliskin-Mevzuatta-Yapilan-Degisiklik-Hakkinda-Duyuru).
+- **Karar:**
+  - Playce'ta alkol promosyonu ("happy hour", kokteyl kampanyası), alkol markası/logosu ve alkol sponsorlu gece yer almaz.
+  - Mekân kartında "kokteyl bar" gibi tür bilgisi olabilir; fiyat/kampanya olamaz.
+  - Görseller admin onayından geçer.
+  - Gece hayatı içeriği 18+ kapısının arkasındadır.
+- **Sonuç:** Sponsorlu öne çıkarma gelirinde alkol markaları müşteri olamaz. Hukuk görüşü alınana kadar katı yorum uygulanır.
+
+## ADR-016 · Yerel tür taksonomisi
+- **Bağlam:** Spotify 2025 Türkiye ilk 100'ünün 98'i yerli. Türkçe rap, arabesk, Anadolu rock, türkü bar ve fasıl global taksonomilerde kayboluyor.
+- **Karar:** Bu türler Playce'ta birinci sınıf `Genre` olur. Dış etiketler (`TagGenreMap`) bunlara eşlenir. Prototipteki 10 tür ~14'e çıkar:
+  - "Hip-Hop & R&B" ikiye ayrılır: Türkçe Rap + Hip-Hop/R&B.
+  - Arabesk & Fantezi eklenir.
+  - Anadolu Rock eklenir (Rock'tan ayrılır).
+  - Fasıl & Türk Sanat eklenir.
+
+## ADR-017 · Veri edinme sırası ve kazıma yasağı
+- **Karar:** Etkinlik verisi şu sırayla edinilir:
+  1. Admin girişi
+  2. Organizatör ve mekân başvurusu (BUGECE modeli)
+  3. Etkinlik.io API'si
+  4. Bandsintown / Ticketmaster (test sonrası)
+  5. Bilet platformlarıyla derin link + UTM ve gelir paylaşımı teklifi
+- **Kazıma yok:** Bilet sitelerinin kullanım koşulları, bot korumaları ve haksız rekabet riski nedeniyle hukuk görüşü olmadan yapılmaz.
+
+## ADR-018 · Reklamsız radyo
+- **Bağlam:** Türk radyo uygulamalarının en büyük şikâyeti reklam. En memnun uygulama reklamsız olan (TRT Dinle 4,79).
+- **Karar:** Playce kendi oynatıcısına reklam eklemez. İstasyonun kendi yayınındaki reklam olduğu gibi kalır. Radyo kullanıcıyı getiren kancadır; gelir mekân ve etkinlik tarafından gelir.
+
+## ADR-019 · İstasyon izni
+- **Bağlam:** radio-browser yayın adresi verir ama yayın hakkı vermez. Türk istasyonlarını uygulamada çalmak için istasyonun izni gerekir.
+- **Karar:**
+  - Lansmandan önce çalınan her Türk istasyonu için yazılı izin veya ortaklık alınır. Öncelik Karnaval (Süper, Metro, JoyTürk, Joy, Virgin), Power ve Doğuş (Kral).
+  - İzni olmayan istasyon küratörlü listeden çıkar.
+  - Ortaklık teklifi: istasyon trafiği + istasyon markalı "bu gece" seçkisi + dinleyici istatistikleri.

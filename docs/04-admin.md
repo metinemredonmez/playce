@@ -75,6 +75,9 @@ Panel
 5. *Bilet:* ücretsiz mi, başlangıç fiyatı (TL girilir, kuruş saklanır), bilet sağlayıcı, bilet linki (affiliate parametresi otomatik eklenir), yaş sınırı.
 6. *Yayın:* durum, yayın zamanı (zamanlanmış yayın), "takipçilere bildir" (varsayılan açık).
 - **Doğrulama:** bitiş > başlangıç; geçmiş tarihli etkinlik yayınlanamaz; aynı mekân + ±2 saat + benzer başlık → "olası kopya" uyarısı.
+- **Alkol mevzuatı denetimi (ADR-015):** başlık/açıklamada promosyon ve marka kelimeleri ("happy hour", "1 alana 1", marka adları) →
+  kırmızı uyarı, yayın engellenir; kapak görseli "alkol markası/ürünü yok" onay kutusuyla yayınlanır. Gece içeriğinde yaş sınırı 18 varsayılan.
+- **Güven alanları (M17):** satıcı, hizmet bedeli notu, iade koşulu (şablonlardan seçilebilir), kapı/kıyafet kuralı.
 - **Sağ panel önizleme:** mobil etkinlik kartı ve detay sayfası canlı önizleme.
 
 ### 4.3 Mekânlar
@@ -109,7 +112,8 @@ Radyoda çalıp DB'de karşılığı olmayan sanatçılar, **çalma sayısına g
 - Hedef: **haftada bir 30 dakika** bu ekranla eşleşme oranını %20'lerden %60+'ya çıkarmak.
 
 ### 4.6 İstasyonlar
-**Liste:** ad, tür, ülke, durum (Çalışıyor / Kapalı / Metadata yok), son kontrol, son 24 saat dinlenme, sıra (sürükle-bırak).
+**Liste:** ad, tür, ülke, durum (Çalışıyor / Kapalı / Metadata yok), **izin durumu** (Yazılı izin / Ortaklık / Bekliyor — bekleyen Türk istasyonu yayına alınamaz, ADR-019),
+metadata kaynağı (ICY / Triton / ses tanıma), son kontrol, son 24 saat dinlenme, sıra (sürükle-bırak).
 - **Test et:** panelde çal + "şu an çalan"ı oku (API `stations/:id/test`).
 - **radio-browser'dan ekle:** ara → seç → tür ata → küratörlü listeye al.
 - Kapalı istasyonlar en üstte kırmızı; "3 kez başarısız → uygulamada gizlendi" bilgisi.

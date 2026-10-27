@@ -493,8 +493,13 @@ ML yok; sinyaller `SavedEvent`, `ArtistFollow`, `PlayLog` ve tıklama olayların
 | Eşleşmeyenler kuyruğu | Sanatçı kapsamı | Radyoda en çok çalan eşleşmeyen sanatçılar → tek tıkla ekle |
 | MusicBrainz | Sanatçı kimliği, alias, ülke | Admin "ara ve ekle" (1 istek/sn sınırı, User-Agent zorunlu) |
 | Google Places | Mekân adresi, konum, saat, telefon | Admin "Places'ten içe aktar" (yalnız place_id ve izin verilen alanlar saklanır) |
-| Bilet platformları | Konser verisi | Ortaklık / affiliate (ayrıntı ve hukuki not: [01-rakip-analizi.md](01-rakip-analizi.md)) |
-| radio-browser.info | İstasyon keşfi | Mevcut |
+| **Etkinlik.io V2 API** | Türkiye etkinlik + mekân + semt | Yayıncı ağı başvurusu, `X-Etkinlik-Token`; gece `ingest:etkinlikio` — **ilk dış kaynak** |
+| Bandsintown | İstanbul'a gelen yabancı sanatçılar | app_id başvurusu / ortaklık; DB'deki sanatçılar için sorgu |
+| Ticketmaster Discovery | Biletix verisi var mı? | `countryCode=TR` ile test; varsa `ingest:ticketmaster` |
+| Bilet platformları (Bubilet, Biletinial, Mobilet, Biletix, Passo) | Konser verisi + gelir | Herkese açık API yok → derin link + UTM; tıklama verisiyle gelir paylaşımı teklifi. **Kazıma yok** (hukuk görüşü olmadan) |
+| **Triton now-playing XML** | Karnaval istasyonlarında sanatçı, parça, **kapak** | `np.tritondigital.com/public/nowplaying?mountName=<MOUNT>&eventType=track`; ICY'ye tercih edilir |
+| ACRCloud / AudD | Metadata vermeyen önemli istasyonlar (Power, Kral, Eksen HLS) | İstasyon başına aylık ücret; yalnız seçili istasyonlar (S12) |
+| radio-browser.info | İstasyon keşfi | Mevcut; sunucu `all.api.radio-browser.info` ile seçilmeli |
 
 Tekilleştirme: `(normalize(title), venueId, startsAt ± 2 saat)` aynıysa aynı etkinlik → `ExternalRef` eklenir, yeni kayıt açılmaz.
 
@@ -507,6 +512,13 @@ Tekilleştirme: `(normalize(title), venueId, startsAt ± 2 saat)` aynıysa aynı
 - **Gizli bilgiler:** `.env` repoda yok; prod'da `ADMIN` hesapları, JWT anahtarları, Expo access token, Places API key.
 - **KVKK:** aydınlatma metni + açık rıza ayrımı (pazarlama push'u, analitik), onay sürümlü kayıt (`Consent`),
   hesap silme/dışa aktarma uçları, VERBİS değerlendirmesi, veri saklama süreleri (PlayLog ham 90 gün, silinen hesap 30 gün).
+- **KVKK yurt dışı aktarım:** Yurt dışındaki her servis (Sentry, PostHog, Expo Push, e-posta sağlayıcısı, object store) için
+  standart sözleşme imzalanır ve **imzadan sonra 5 iş günü içinde KVKK'ya bildirilir**. Mümkünse AB bölgesi veya kendi sunucumuz kullanılır;
+  servis listesi `docs/` altında güncel tutulur.
+- **Alkol mevzuatı (7584 sayılı Kanun, ADR-015):** etkinlik/mekân metin ve görsellerinde alkol markası, promosyonu
+  ("happy hour", "2 al 1 öde") ve alkol sponsorlu gece yayınlanamaz. API'de basit anahtar kelime denetimi → `REVIEW` durumuna düşürür;
+  son karar admin moderasyonunda. Gece hayatı içeriği `ageLimit ≥ 18` ile işaretlenir, 18 yaş altı/doğrulanmamış kullanıcıya gösterilmez.
+- **Güven alanları:** `Event.sellerName`, `Event.refundPolicy`, `Event.totalPriceNote`; `Venue.doorPolicy`, `Venue.dressCode` — kartta gösterilir (M17).
 - **Loglama:** pino JSON; kişisel veri (e-posta, token) maskelenir. Hata takibi: Sentry.
 - **Yedek:** `pg_dump` her gece 03:30, 14 gün sakla, haftalık sunucu dışına kopya.
 

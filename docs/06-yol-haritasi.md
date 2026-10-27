@@ -30,6 +30,10 @@
 - [ ] `admin`: `X-Admin-Key` → JWT + roller; `AuditLog` interceptor'ı.
 - [ ] `/v1` öneki; eski uçlar bir sürüm boyunca yönlendirme.
 - [ ] Seed'i ikiye böl: `seed:base` (tür + istasyon, prod) / `seed:demo` (yalnız geliştirme).
+- [ ] Yerel türler (ADR-016): Türkçe Rap, Arabesk & Fantezi, Anadolu Rock, Fasıl & Türk Sanat; `TagGenreMap` ilk sürümü.
+- [ ] `radio`: Karnaval istasyonları için Triton now-playing XML (sanatçı, parça, kapak); ICY'ye düşme.
+- [ ] Güven alanları (`sellerName`, `refundPolicy`, `doorPolicy`, `dressCode`) ve alkol anahtar kelime denetimi → `REVIEW` (ADR-015).
+- [ ] `ingest:etkinlikio` (token gelince) ve Ticketmaster `countryCode=TR` deneme betiği.
 - [ ] **Yayın:** VPS'te Postgres kullanıcı/DB, Redis, `playce-api` + `playce-worker` (pm2), nginx + certbot (`api.<alan-adı>`), gece `pg_dump`, Sentry.
 - [ ] e2e: auth, takip/kaydet, discover, events filtreleri, admin yayınla → fan-out.
 
@@ -71,7 +75,11 @@
 - [ ] Sanatçı: Türkiye'de radyoda en çok çalan **500+ sanatçı** (Eşleşmeyenler kuyruğu + liste), alias'larıyla.
 - [ ] Etkinlik akışı: organizatör/mekân ağı (WhatsApp/e-posta), başvuru formu, bilet platformu ortaklıkları — hedef her gece 40+.
 - [ ] İstasyon seçkisi: tür başına 4–6 çalışan HTTPS yayın, Türk istasyonları öncelikli.
-- [ ] Hukuk: KVKK aydınlatma + açık rıza metinleri, kullanım koşulları, VERBİS değerlendirmesi.
+- [ ] Hukuk: KVKK aydınlatma + ayrı açık rıza metinleri (konum, pazarlama, müzik profili), yurt dışı aktarım standart sözleşmeleri + 5 iş günü bildirimi,
+      kullanım koşulları, VERBİS muafiyet teyidi, **alkol mevzuatı yorumu** (ADR-015).
+- [ ] **İstasyon izinleri / ortaklıkları** (ADR-019): Karnaval → Power → Doğuş; izin yoksa istasyon çıkar.
+- [ ] Veri başvuruları: Etkinlik.io yayıncı ağı, Bandsintown app_id; Bubilet / Biletinial / Mobilet'e derin link + UTM görüşmesi.
+- [ ] Organizatör ağı: BUGECE tarzı self-servis giriş için ilk 30 organizatör/promoter (özellikle Kadıköy, Karaköy, Bomonti kulüpleri).
 - [ ] Beta: TestFlight + Play internal (50–100 kişi), haftalık geri bildirim, çökme < %0,5.
 
 ## Faz 6 — Lansman (Hafta 10)
@@ -97,5 +105,8 @@
 | Müzik API kısıtları (özellikle Spotify) | Hesap bağlama herkese açılamaz | Last.fm + YouTube + manuel seçim + uygulama içi dinleme sinyali; ayrıntı 08 |
 | Radyo yayınlarının kırılması | Kötü ilk deneyim | Saatlik sağlık işi, otomatik gizleme, tür başına yedek istasyon |
 | Sanatçı eşleşme oranı düşük | Ana "aha" anı nadir | Eşleşmeyenler kuyruğu, alias'lar, MusicBrainz; tür köprüsü her zaman çalışır |
-| Yayın hakları / lisans | Hukuki risk | Yalnız istasyonların herkese açık yayınlarına bağlantı; kayıt/yeniden yayın yok; istasyon adı ve logosu kaynağıyla |
+| Yayın hakları / istasyon izni | Hukuki risk, istasyonun listeden çıkması | Lansmandan önce yazılı izin/ortaklık (ADR-019); kayıt/yeniden yayın yok; istasyon adı ve logosu kaynağıyla |
+| Alkol mevzuatı (7584) | Gece hayatı içeriğinde ceza riski | Promosyon/marka yasağı, görsel moderasyonu, 18+ kapısı, hukuk görüşü (ADR-015) |
+| Biletçilerin API'si yok | Konser verisi eksik kalır | Etkinlik.io + organizatör girişi + Bandsintown; derin link ile ortaklık; kazıma yok (ADR-017) |
+| fizy / BUGECE / NeYapsak? aynı alana girer | Fark erir | Hızlı lansman; asıl fark olan radyo + zevk eşleşmesi + mekân sesi üçlüsüne odak |
 | Tek VPS | Kesinti | Gece yedeği, uptime alarmı, hızlı geri yükleme dokümanı |
