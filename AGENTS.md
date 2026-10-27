@@ -7,6 +7,14 @@ Playce = radyo + mekân + etkinlik. Kullanıcı canlı radyo dinler; uygulama ç
 tanıyıp konserini, dinlenen türün bu gece şehirde nerede çaldığını ve o türü çalan mekânları gösterir.
 Luca'dan (lucaevent) **bağımsız** bir projedir; kendi backend'i vardır.
 
+## Önce oku
+İş yapmadan önce ilgili dokümanı oku (`docs/`):
+- Ne / kime / neden → `00-urun.md`, rakipler ve farkımız → `01-rakip-analizi.md`
+- Öncelik (M/S/C/W) → `02-mvp-kapsam.md`
+- Backend hedef şema + API → `03-backend.md` · Admin ekranları → `04-admin.md` · Mobil ekranlar → `05-mobil.md`
+- Faz sırası → `06-yol-haritasi.md` · Kararlar → `07-kararlar.md` (yeni kararı ADR olarak ekle)
+- Ses profili / eşleşme % / müzik hesabı bağlama → `08-zevk-eslesme.md`
+
 ## Stack
 - `apps/api` NestJS 10 + Prisma 5 + Postgres (port 3030, Swagger `/docs`)
 - `apps/mobile` Expo SDK 58 + Expo Router (src/app), NativeTabs, expo-audio

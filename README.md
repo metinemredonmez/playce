@@ -12,6 +12,16 @@ playce/
 └── .nvmrc         Node 22 (Expo 58 ≥ 22.13 ister)
 ```
 
+## Dokümanlar
+
+Ürün, rakip analizi ve MVP planı [`docs/`](docs/) altında — başlangıç: [00-urun.md](docs/00-urun.md).
+
+| | |
+|---|---|
+| [00 Ürün](docs/00-urun.md) · [01 Rakip analizi](docs/01-rakip-analizi.md) · [02 MVP kapsamı](docs/02-mvp-kapsam.md) | ne, neden, kime |
+| [03 Backend](docs/03-backend.md) · [04 Admin](docs/04-admin.md) · [05 Mobil](docs/05-mobil.md) | nasıl |
+| [06 Yol haritası](docs/06-yol-haritasi.md) · [07 Kararlar](docs/07-kararlar.md) · [08 Zevk eşleşmesi](docs/08-zevk-eslesme.md) | ne zaman, neden böyle |
+
 ## Nasıl çalışır
 
 ```
