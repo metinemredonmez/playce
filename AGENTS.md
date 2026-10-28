@@ -19,6 +19,9 @@ Luca'dan (lucaevent) **bağımsız** bir projedir; kendi backend'i vardır.
 - `apps/api` NestJS 11 + Prisma 5 + Postgres (port 3030, tüm uçlar `/v1`, Swagger `/docs`)
   - İki giriş: `main.ts` (HTTP) ve `worker.ts` (zamanlanmış işler, `src/jobs/jobs.service.ts`)
   - Nest 12 ESM-only; geçiş ayrı iş (ADR-021). `jose` 5'te kalır (6 ESM-only).
+- `apps/admin` Next.js 16 (App Router) + Tailwind 4 + shadcn/ui (Radix), port 3031. **Next 16 eğitim verisinden yeni:**
+  kod yazmadan önce `node_modules/next/dist/docs/` oku (`middleware` → `proxy.ts`, `cookies()` async, mutasyon sonrası `refresh()`).
+  Token tarayıcıya gitmez: API çağrıları sunucuda `src/lib/api.ts` ile (ADR-025). Yeni ekran → `src/lib/nav.ts`'e rolüyle ekle.
 - `apps/mobile` Expo SDK 58 + Expo Router (src/app), NativeTabs, expo-audio
 - Node 22 (`.nvmrc`). Expo 58, Node 20'de uyarı verir.
 
@@ -48,7 +51,7 @@ Luca'dan (lucaevent) **bağımsız** bir projedir; kendi backend'i vardır.
 - `Link asChild` Pressable'ın fonksiyon stillerini uygulamıyor → kart bağlantıları için `PressLink`.
 
 ## Komutlar
-`pnpm dev:api` · `pnpm dev:worker` · `pnpm ios` · `pnpm --filter @playce/api ingest <etkinlikio|ticketmaster> [--dry-run]` · `pnpm db:create` · `pnpm db:migrate` · `pnpm db:seed` (temel + demo) · `pnpm db:seed:base` (yalnız tür/istasyon, prod) · `pnpm db:studio` · `pnpm typecheck` · `pnpm test:api`
+`pnpm dev:api` · `pnpm dev:worker` · `pnpm dev:admin` · `pnpm ios` · `pnpm --filter @playce/api ingest <etkinlikio|ticketmaster> [--dry-run]` · `pnpm db:create` · `pnpm db:migrate` · `pnpm db:seed` (temel + demo) · `pnpm db:seed:base` (yalnız tür/istasyon, prod) · `pnpm db:studio` · `pnpm typecheck` · `pnpm test:api`
 
 e2e testleri `apps/api/test/` altında, ayrı `<db>_test` veritabanında koşar (her çalıştırmada sıfırlanır).
 E-posta, Expo Push, radyo okuma ve Apple/Google anahtarları sahteyle değiştirilir (`test/utils.ts`).

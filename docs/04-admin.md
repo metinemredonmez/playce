@@ -4,10 +4,16 @@
 > Uygulamanın değeri verinin kapsamına bağlı: radyoda çalan sanatçıların ne kadarı DB'de,
 > bu gecenin ne kadar etkinliği girilmiş. Panel bu iki sayıyı büyütmek için tasarlanır.
 
+> Durum (28 Eki 2026): iskelet, e-posta kodu ile giriş, rol bazlı menü, **Moderasyon** ve **Eşleşmeyenler** ekranları hazır.
+> Diğer menü öğeleri "yakında" olarak görünür. Yayın alan adı + SMTP'yi bekliyor ([09](09-yayin.md)).
+
 ## 1. Teknoloji
 
-- `apps/admin` — **Next.js 15 (App Router) + Tailwind + shadcn/ui + TanStack Table + React Hook Form + Zod**
-  (Luca'daki web/admin deseniyle aynı; ekip zaten biliyor).
+- `apps/admin` — **Next.js 16 (App Router) + Tailwind 4 + shadcn/ui (Radix)** — port 3031.
+  TanStack Table + React Hook Form + Zod büyük liste/form ekranlarıyla (etkinlik, mekân) eklenecek; ilk iki kuyruk ekranında gerekmedi.
+- Next 16'da `middleware` → `proxy.ts`. Kod yazmadan önce sürümün kendi dokümanı: `node_modules/next/dist/docs/`.
+- **Oturum (ADR-025):** token'lar tarayıcıya gitmez — Next sunucusu API'yi kullanıcı adına çağırır, access/refresh token
+  httpOnly çerezde. `src/proxy.ts` süresi dolmak üzere olan access token'ı refresh ile sessizce yeniler.
 - Veri: API'nin `/v1/admin/*` uçları; sunucu tarafında `fetch` + kısa cache, istemcide TanStack Query.
 - Giriş: e-posta OTP (API'deki `auth` modülü) → yalnız `role ∈ {EDITOR, MODERATOR, ADMIN, SUPERADMIN}` girebilir.
 - Yayın: `admin.<alan-adı>` (nginx → Next, port 3031), pm2 adı `playce-admin`.

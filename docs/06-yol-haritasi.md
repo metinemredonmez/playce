@@ -39,15 +39,16 @@
 - [x] e2e: auth, takip/kaydet, fan-out, bildirim, PlayLog, arama, istasyon sağlığı, etkinlik filtreleri, AuditLog, seed, discover, mekân saatleri, Triton, alkol denetimi, içe aktarma, derin sağlık (94 test).
 
 ## Faz 2 — Admin paneli (Hafta 3–4)
-- [ ] `apps/admin` Next.js 15 + shadcn iskeleti, OTP girişi, rol bazlı menü.
+- [x] `apps/admin` Next.js 16 + shadcn iskeleti, OTP girişi (httpOnly çerez, sessiz yenileme — ADR-025), rol bazlı menü ve kuyruk rozetleri.
+- [x] **Moderasyon** kuyruğu: alkol bayrakları, metni düzelt ve yayınla (yeniden denetim), "yine de yayınla" (MODERATOR+), taslağa al.
 - [ ] Gösterge paneli (KPI'lar, iş kuyrukları, en çok çalanlar).
 - [ ] Etkinlik liste + form (lineup sürükle-bırak, olası kopya uyarısı, canlı mobil önizleme, zamanlanmış yayın).
 - [ ] Mekân liste + form (Google Places'ten doldur, harita pini, saatler, ses profili, galeri).
 - [ ] Sanatçı liste + form (MusicBrainz'den bul, alias, birleştir, radyo geçmişi).
-- [ ] **Eşleşmeyenler** kuyruğu (oluştur / bağla / yoksay).
+- [x] **Eşleşmeyenler** kuyruğu: oluştur (türler istasyondan önerilir) / bağla (yazım hatası toleranslı arama) / yoksay / geri al; çaldığı istasyonlar.
 - [ ] İstasyonlar (sağlık, test et, radio-browser'dan ekle, sıralama), Türler.
 - [ ] Öne çıkanlar (takvim görünümü, sponsorlu anahtarı), Başvurular, Kullanıcılar (KVKK silme), Kampanyalar, Denetim kaydı.
-- [ ] Yayın: `admin.<alan-adı>`, pm2 `playce-admin`.
+- [ ] Yayın: `admin.<alan-adı>`, pm2 `playce-admin` — alan adı (HTTPS) ve SMTP (giriş kodu) bekleniyor.
 
 ## Faz 3 — Zevk eşleşmesi (Hafta 4–5)
 - [ ] Şema: `MusicConnection`, `TasteArtist`, `TasteGenre`, `VenueGenre` (ağırlıklı), `VenueArtist`, `TagGenreMap`.

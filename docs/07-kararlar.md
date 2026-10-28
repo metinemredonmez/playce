@@ -172,3 +172,17 @@ Her önemli karar burada: bağlam → karar → sonuç. Yeni karar en alta, numa
   İstasyonun varsayılan görseli kapak sayılmaz. Şema değişmedi: kaynak adresten anlaşılır, admin sağlık listesinde `metadataSource` olarak görünür.
 - **Sonuç:** Karnaval'da sanatçı eşleşmesi daha temiz, uygulama kapak gösterebilir (`track.cover`). Triton ortaklık/izin
   konusu ADR-019 kapsamında; uç herkese açık ama koşulları değişebilir — ICY her zaman yedek.
+
+## ADR-025 · Admin paneli oturumu: sunucu tarafında, httpOnly çerez
+- **Bağlam:** Panel yalnız Editör+ rollerine açık ve admin uçları güçlü. Token'ı tarayıcıda (localStorage) tutmak XSS'te çalınmasına açık.
+- **Karar:**
+  - Next.js paneli API'nin önünde bir arka uç gibi çalışır: giriş (e-posta kodu) server action ile yapılır.
+  - Access ve refresh token `httpOnly`, `SameSite=Lax` çerezlere yazılır; production'da `Secure`.
+  - Sayfalar ve server action'lar API'yi token'la sunucudan çağırır; tarayıcı token görmez.
+  - `src/proxy.ts`: access token'ın süresi doluyorsa refresh ile yeniler. Yeni çerezleri hem tarayıcıya hem o isteğin
+    sunucu bileşenlerine iletir.
+  - Aynı süreçte eşzamanlı yenilemeler tek API isteğine iner (API ikinci kullanımı reddeder, ADR-022).
+  - Rol kontrolü iki katlı: girişte (Editör altı reddedilir, açılan oturum hemen kapatılır), her istekte API'nin `@Roles()`'ı.
+    Menü rol ile sunucuda süzülür.
+- **Sonuç:** Panel tek Node sürecinde çalışmalı (bellek içi yenileme paylaşımı); çok kopyada paylaşım Redis'e taşınır.
+  HTTPS gelene kadar `ADMIN_INSECURE_COOKIES=1` ile yalnız yerel ağda denenebilir.

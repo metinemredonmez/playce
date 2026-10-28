@@ -7,6 +7,7 @@ o türün bu gece şehirde nerede çaldığını gösterir.
 playce/
 ├── apps/
 │   ├── api/       NestJS + Prisma + Postgres — API (port 3030, /v1, Swagger: /docs) + worker
+│   ├── admin/     Next.js 16 + shadcn — admin paneli (port 3031)
 │   └── mobile/    Expo SDK 58 + Expo Router (iOS / Android)
 ├── package.json   pnpm workspace kök scriptleri
 └── .nvmrc         Node 22 (Expo 58 ≥ 22.13 ister)
@@ -55,6 +56,7 @@ pnpm db:seed            # temel veri (tür, istasyon) + demo mekân/sanatçı/et
 ```bash
 pnpm dev:api            # http://localhost:3030/v1  (Swagger: /docs)
 pnpm dev:worker         # arka plan işleri (bildirim, radyo yoklayıcısı)
+pnpm dev:admin          # http://localhost:3031 — admin paneli (API açık olmalı)
 pnpm ios                # Expo → iOS simülatör (Expo Go)
 pnpm test:api           # API e2e testleri (ayrı playce_dev_test veritabanında)
 pnpm --filter @playce/api ingest ticketmaster --dry-run   # dış kaynak denemesi (anahtar gerekir)
@@ -79,7 +81,9 @@ Telefonda Expo Go ile açınca uygulama API'yi Metro'yu sunan bilgisayarın IP's
 
 ## İçerik ekleme (admin)
 
-Panel yok; `/docs` (Swagger) üzerinden. Yetki: **EDITOR+ rolünde kullanıcı** (Bearer token) ya da geçiş dönemi
+**Panel** (`pnpm dev:admin` → http://localhost:3031): e-posta koduyla giriş (geliştirmede kod API konsolunda),
+Editör ve üstü roller. Hazır ekranlar: **Moderasyon** (alkol denetimine takılan etkinlikler) ve **Eşleşmeyenler**
+(radyoda çalıp DB'de olmayan sanatçılar). Diğer içerik henüz `/docs` (Swagger) üzerinden. Yetki: **EDITOR+ rolünde kullanıcı** (Bearer token) ya da geçiş dönemi
 için `X-Admin-Key`. Rol vermek için şimdilik: `UPDATE "User" SET role='ADMIN' WHERE email='…';`
 
 | Uç | Ne yapar |
