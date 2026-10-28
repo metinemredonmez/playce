@@ -314,10 +314,9 @@ model Media {
   @@index([entityType, entityId])
 }
 
-// Venue'ya eklenecek alanlar:
-//   googlePlaceId String? @unique, phone String?, website String?, reservationUrl String?,
-//   capacity Int?, ageLimit Int?, isClaimed Boolean @default(false), soundStationId String? (override),
-//   hours VenueHours[], follows VenueFollow[], searchText String (normalize edilmiş)
+// Venue'ya eklenecek alanlar (✅ = eklendi):
+//   phone, website, reservationUrl, capacity, ageLimit, soundStationId (override), hours, follows, searchText ✅
+//   googlePlaceId String? @unique, isClaimed Boolean @default(false)
 // Artist'e eklenecek alanlar:
 //   country String?, isTurkish Boolean @default(false), instagram String?, popularity Int @default(0),
 //   follows ArtistFollow[], searchText String
@@ -446,7 +445,7 @@ Liste uçları **cursor** sayfalama: `?cursor=<id>&limit=20` → `{ items, nextC
 | Dashboard | `GET stats/overview`, `GET stats/plays?range`, `GET stats/funnel` | EDITOR+ |
 | Etkinlik | `GET events?status&when&q&genre&venue&source&missing&cursor` ✅ (liste + moderasyon kuyruğu; alkol bayrakları, `counts` = durum dağılımı), `GET events/:slug` ✅ (form: lineup sırası, kaydetme, dış kaynaklar), `POST events/check` ✅ (kaydetmeden önce alkol bayrağı + olası kopya; yazmaz), `POST/PATCH/DELETE events/:slug` ✅. Kurallar: kapı ≤ başlangıç < bitiş; bitmiş etkinlik yayına alınamaz. Toplu durum ve kopyalama panelde (tek tek PATCH / formu doldur) | EDITOR+ (`allowFlagged`: MODERATOR+) |
 | Seçiciler | `GET lookup/venues?q`, `GET lookup/artists?q` ✅ (Türkçe karakter + yazım hatası duyarsız, 10 sonuç) | EDITOR+ |
-| Mekân | CRUD ✅ + `PUT venues/:slug/hours` ✅, `GET places/search?q` (Google Places), `POST venues/:id/import-place` | EDITOR+ |
+| Mekân | `GET venues?q&district&genre&source&missing&cursor` ✅ (`missing` = konum/saat/kapak; yanıtta eksik alan sayıları), `GET venues/:slug` ✅ (saatler, seçili + varsayılan "mekânın sesi"), `POST venues/check` ✅ (alkol + aynı ad / ~100 m; yazmaz), CRUD ✅ (`soundStationSlug`; etkinliği olan mekân silinmez) + `PUT venues/:slug/hours` ✅, `GET places/search?q` (Google Places), `POST venues/:id/import-place` | EDITOR+ |
 | Sanatçı | CRUD + `POST artists/:id/merge {intoId}`, `POST artists/:id/aliases`, `GET artists/lookup?q` (MusicBrainz) | EDITOR+ |
 | Eşleşmeyenler | `GET unmatched?status&sort=plays`, `POST unmatched/:key/{link,create,ignore}` | EDITOR+ |
 | İstasyon | CRUD + `POST stations/:slug/test` (bağlan + ICY oku) ✅, `GET stations/health` ✅ | EDITOR+ |

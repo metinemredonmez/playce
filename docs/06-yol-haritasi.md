@@ -46,7 +46,10 @@
       form bölümleri (temel, zaman — İstanbul saati, yer + hızlı mekân, tür çipleri, lineup sırası + hızlı sanatçı, bilet ve güven şablonları),
       yazarken alkol denetimi ve olası kopya uyarısı, kapak onay kutusu, gelecek haftaya kopyala, ⌘S / ⌘↵.
       Kalan: kapak yükleme (görsel deposu), canlı mobil önizleme, zamanlanmış yayın, yinelenen seri, CSV dışa aktarma.
-- [ ] Mekân liste + form (Google Places'ten doldur, harita pini, saatler, ses profili, galeri).
+- [x] **Mekânlar** liste + form: eksik alan iş kuyruğu (konum / saat / kapak), semt-tür-kaynak süzgeçleri, şimdi açık, yaklaşan etkinlik;
+      form (Google Haritalar bağlantısından konum + harita önizlemesi, gün gün saatler, türler, "mekânın sesi" seçimi, kapı ve fiyat,
+      iletişim + rezervasyon), aynı ad / ~100 m uyarısı, "bu mekâna etkinlik ekle", etkinliği olan mekân silinmez.
+      Kalan: Google Places'ten doldur (anahtar), sürüklenebilir pin, galeri, ağırlıklı türler, çalma listesi linki.
 - [ ] Sanatçı liste + form (MusicBrainz'den bul, alias, birleştir, radyo geçmişi).
 - [x] **Eşleşmeyenler** kuyruğu: oluştur (türler istasyondan önerilir) / bağla (yazım hatası toleranslı arama) / yoksay / geri al; çaldığı istasyonlar.
 - [ ] İstasyonlar: ~~sağlık listesi, test et, metadata kaynağı~~ ✅; radio-browser'dan ekle, sıralama, Türler kaldı.

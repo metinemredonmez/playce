@@ -19,7 +19,8 @@ import { ago, fromTrInput, inputToKurus, kurusToInput, toTrInput, trDateTime } f
 import { cn } from '@/lib/utils';
 import type { ArtistHit, District, EventCheck, EventDetail, EventStatus, Genre, TicketProvider, VenueHit } from '@/lib/types';
 import { checkEvent, deleteEvent, saveEvent, type EventPayload } from './actions';
-import { GenreChips, LineupPicker, VenuePicker } from './pickers';
+import { GenreChips } from '@/components/genre-chips';
+import { LineupPicker, VenuePicker } from './pickers';
 
 type Form = {
   title: string;
@@ -51,7 +52,7 @@ function shift(local: string, minutes: number) {
   return new Date(new Date(`${local}:00Z`).getTime() + minutes * 60_000).toISOString().slice(0, 16);
 }
 
-function initial(e: EventDetail | null, copy: boolean): Form {
+function initial(e: EventDetail | null, copy: boolean, venue: VenueHit | null): Form {
   const t = (iso: string | null) => (copy ? shift(toTrInput(iso), WEEK_MIN) : toTrInput(iso));
   return {
     title: e?.title ?? '',
@@ -61,7 +62,7 @@ function initial(e: EventDetail | null, copy: boolean): Form {
     startsAt: e ? t(e.startsAt) : '',
     doorsAt: e ? t(e.doorsAt) : '',
     endsAt: e ? t(e.endsAt) : '',
-    venue: e?.venue ?? null,
+    venue: e?.venue ?? venue,
     genreSlugs: e?.genres.map((g) => g.slug) ?? [],
     artists: e?.artists ?? [],
     isFree: e?.isFree ?? false,
@@ -132,6 +133,7 @@ function payload(f: Form, status: EventStatus, allowFlagged: boolean): EventPayl
 export function EventForm({
   event,
   copyOf,
+  venue,
   genres,
   districts,
   canOverride,
@@ -140,13 +142,15 @@ export function EventForm({
   event: EventDetail | null;
   /** Kopyalanan etkinlik (aynı bilgiler, tarih +7 gün, taslak) */
   copyOf?: EventDetail | null;
+  /** Yeni etkinlikte önceden seçili mekân (mekân ekranından "etkinlik ekle") */
+  venue?: VenueHit | null;
   genres: Genre[];
   districts: District[];
   canOverride: boolean;
 }) {
   const router = useRouter();
   const source = event ?? copyOf ?? null;
-  const [f, setF] = useState<Form>(() => initial(source, Boolean(copyOf)));
+  const [f, setF] = useState<Form>(() => initial(source, Boolean(copyOf), venue ?? null));
   const [baseline, setBaseline] = useState(() => JSON.stringify(f));
   const [errors, setErrors] = useState<ReturnType<typeof validate>>({});
   const [check, setCheck] = useState<EventCheck>({ flags: event?.flags ?? [], duplicates: [] });

@@ -5,7 +5,7 @@
 > bu gecenin ne kadar etkinliği girilmiş. Panel bu iki sayıyı büyütmek için tasarlanır.
 
 > Durum (28 Eki 2026): iskelet, e-posta kodu ile giriş, rol bazlı menü; **Moderasyon**, **Eşleşmeyenler**, **Etkinlikler**
-> (liste + form), **İstasyonlar** (sağlık + test et), **İçe aktarma** ve **Denetim kaydı** ekranları hazır.
+> ve **Mekânlar** (liste + form), **İstasyonlar** (sağlık + test et), **İçe aktarma** ve **Denetim kaydı** ekranları hazır.
 > Diğer menü öğeleri "yakında" olarak görünür. Yayın alan adı + SMTP'yi bekliyor ([09](09-yayin.md)).
 
 ## 1. Teknoloji
@@ -106,6 +106,13 @@ Panel
 - Çalışma saatleri (gün gün; "gece yarısını geçer" desteği), fiyat seviyesi (₺–₺₺₺₺), kapasite, yaş sınırı, dress code notu.
 - İletişim: telefon, Instagram, web, rezervasyon linki.
 - Sahiplik: "doğrulanmış mekân" işareti, bağlı organizatör hesabı (faz 2).
+
+> **Yapılan (28 Eki 2026):** liste (eksik alan iş kuyruğu çipleri, arama, semt/tür/kaynak, şimdi açık, yaklaşan etkinlik → Etkinlikler süzgeci),
+> form (temel, konum: Google Haritalar bağlantısı ya da "enlem, boylam" yapıştır → OpenStreetMap önizleme + İstanbul dışı uyarısı,
+> gün gün saatler + "ertesi gün" ipucu, türler, "mekânın sesi" — otomatik ya da elle, kapı/fiyat şablonları, iletişim + rezervasyon),
+> yazarken alkol denetimi ve aynı ad / ~100 m uyarısı, ⌘S, "bu mekâna etkinlik ekle" (etkinlik formu mekân seçili açılır).
+> Etkinliği olan mekân silinmez (silme etkinlikleri zincirleme silerdi).
+> **Kalan:** Google Places'ten doldur (API anahtarı), sürüklenebilir pin, galeri, ağırlıklı türler, çalma listesi linki, sahiplik.
 
 ### 4.4 Sanatçılar
 **Liste:** ad, türler, alias sayısı, son 7 gün radyoda çalma, yaklaşan etkinlik, takipçi.

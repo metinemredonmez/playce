@@ -5,13 +5,19 @@ import { hasRole } from '@/lib/roles';
 import { trDateTime } from '@/lib/format';
 import { EventForm } from '../event-form';
 import { loadEvent, loadOptions } from '../load';
+import { loadVenue } from '../../mekanlar/load';
 
 export const metadata: Metadata = { title: 'Yeni etkinlik' };
 
-/** ?kopya=<slug>: aynı bilgiler, tarih +7 gün, taslak olarak açılır */
-export default async function NewEventPage({ searchParams }: { searchParams: Promise<{ kopya?: string }> }) {
-  const { kopya } = await searchParams;
-  const [me, [genres, districts], copyOf] = await Promise.all([getMe(), loadOptions(), kopya ? loadEvent(kopya) : null]);
+/** ?kopya=<slug>: aynı bilgiler, tarih +7 gün, taslak olarak açılır. ?mekan=<slug>: mekân seçili açılır. */
+export default async function NewEventPage({ searchParams }: { searchParams: Promise<{ kopya?: string; mekan?: string }> }) {
+  const { kopya, mekan } = await searchParams;
+  const [me, [genres, districts], copyOf, venue] = await Promise.all([
+    getMe(),
+    loadOptions(),
+    kopya ? loadEvent(kopya) : null,
+    mekan && !kopya ? loadVenue(mekan) : null,
+  ]);
 
   return (
     <div className="grid max-w-7xl grid-cols-[minmax(0,1fr)] gap-6">
@@ -26,7 +32,11 @@ export default async function NewEventPage({ searchParams }: { searchParams: Pro
           </p>
         )}
       </header>
-      <EventForm event={null} copyOf={copyOf} genres={genres} districts={districts} canOverride={hasRole(me.role, 'MODERATOR')} />
+      <EventForm
+        event={null}
+        copyOf={copyOf}
+        venue={venue && { slug: venue.slug, name: venue.name, district: venue.district, ageLimit: venue.ageLimit }}
+        genres={genres} districts={districts} canOverride={hasRole(me.role, 'MODERATOR')} />
     </div>
   );
 }

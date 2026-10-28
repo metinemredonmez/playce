@@ -143,3 +143,65 @@ export type AuditEntry = {
   createdAt: string;
   actor: { id: string; email: string | null; name: string | null } | null;
 };
+
+export type VenueHour = { weekday: number; opensAt: string; closesAt: string };
+type OpenStatus = { openNow: boolean | null; openUntil: string | null };
+
+/** GET /admin/venues öğesi */
+export type VenueRow = OpenStatus & {
+  id: string;
+  slug: string;
+  name: string;
+  district: string;
+  coverUrl: string | null;
+  priceLevel: number | null;
+  ageLimit: number | null;
+  source: DataSource;
+  genres: Genre[];
+  hasLocation: boolean;
+  hasHours: boolean;
+  upcomingEvents: number;
+  followers: number;
+  flags: string[];
+};
+/** missing: tüm mekânlarda eksik alan sayıları (iş kuyruğu) */
+export type VenuePage = Page<VenueRow> & { total: number; missing: { location: number; hours: number; cover: number } };
+
+/** GET /admin/venues/:slug — düzenleme formu */
+export type VenueDetail = OpenStatus & {
+  id: string;
+  slug: string;
+  name: string;
+  district: string;
+  address: string | null;
+  lat: number | null;
+  lng: number | null;
+  description: string | null;
+  coverUrl: string | null;
+  instagram: string | null;
+  phone: string | null;
+  website: string | null;
+  reservationUrl: string | null;
+  capacity: number | null;
+  priceLevel: number | null;
+  ageLimit: number | null;
+  doorPolicy: string | null;
+  dressCode: string | null;
+  source: DataSource;
+  createdAt: string;
+  updatedAt: string;
+  genres: Genre[];
+  hours: VenueHour[];
+  soundStation: { slug: string; name: string; status: StationStatus } | null;
+  defaultSound: { slug: string; name: string } | null;
+  upcomingEvents: number;
+  followers: number;
+  refs: { source: string; externalId: string; url: string | null; syncedAt: string }[];
+  flags: string[];
+};
+
+/** POST /admin/venues/check */
+export type VenueCheck = {
+  flags: string[];
+  duplicates: { slug: string; name: string; district: string; reason: 'name' | 'near'; meters: number | null }[];
+};
