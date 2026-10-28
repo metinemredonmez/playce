@@ -8,12 +8,11 @@ import { distanceKm } from '../common/geo';
 import { ticketProviderFor } from '../common/tickets';
 import { alcoholFlags } from '../moderation/alcohol';
 import { findDuplicateEvents } from '../events/duplicates';
+import { SAME_VENUE_KM } from '../venues/duplicates';
 import { EtkinlikIoSource } from './sources/etkinlikio';
 import { TicketmasterSource } from './sources/ticketmaster';
 import { ExternalEvent, ExternalVenue, IngestSource } from './types';
 
-/** Koordinatı bu kadar yakın mekân aynı sayılır */
-const SAME_VENUE_KM = 0.1;
 /** Bitmemiş tur bu süreden eskiyse takılmış sayılır, yenisi başlayabilir */
 const STALE_RUN_MS = 30 * 60_000;
 const MAX_ERRORS = 20;

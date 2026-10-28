@@ -62,6 +62,9 @@ E-posta, Expo Push, radyo okuma ve Apple/Google anahtarları sahteyle değiştir
 Yeni migration (headless, `migrate dev` TTY ister):
 `npx prisma migrate diff --from-url $DATABASE_URL --to-schema-datamodel prisma/schema.prisma --script > prisma/migrations/<ts>_name/migration.sql` → `pnpm db:migrate`.
 Prisma tetikleyici ve SQL fonksiyonlarını görmez (diff'e girmez); onları migration'a elle eklenir.
+**`--from-migrations` / `--shadow-database-url` kullanma:** gölge veritabanı baştan silinir; adres yanlışsa (ör. macOS `sed`
+`\|` desteklemez, adres değişmeden kalır) yerel `playce_dev` sıfırlanır. Olursa: `pnpm db:seed` ile geri kur.
+Migration'ı numaralandırırken klasör adı son migration'dan büyük olsun (saat değil, sıra).
 
 ## Yayın
 Sunucu `ssh hazal`, kod `/var/www/playce`, pm2 `playce-api` + `playce-worker`. Güncelleme: `bash deploy/deploy.sh` (sunucuda).

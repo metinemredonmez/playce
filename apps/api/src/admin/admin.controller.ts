@@ -7,7 +7,9 @@ import { SearchQuery } from '../search/search.dto';
 import { AdminService } from './admin.service';
 import {
   AdminEventsQuery,
+  AdminVenuesQuery,
   CheckEventDto,
+  CheckVenueDto,
   CreateArtistDto,
   CreateEventDto,
   CreateStationDto,
@@ -48,6 +50,11 @@ export class AdminController {
   @Get('lookup/venues') lookupVenues(@Query() q: SearchQuery) { return this.search.lookup('venue', q.q); }
   @Get('lookup/artists') lookupArtists(@Query() q: SearchQuery) { return this.search.lookup('artist', q.q); }
 
+  /** Mekân listesi; missing = eksik alan sayıları (konum, saat, kapak) */
+  @Get('venues') listVenues(@Query() q: AdminVenuesQuery) { return this.admin.listVenues(q); }
+  /** Formda kaydetmeden önce: alkol denetimi + olası aynı mekân. Yazmaz. */
+  @Post('venues/check') @HttpCode(200) checkVenue(@Body() dto: CheckVenueDto) { return this.admin.checkVenue(dto); }
+  @Get('venues/:slug') getVenue(@Param('slug') slug: string) { return this.admin.getVenue(slug); }
   @Post('venues') @Audit('venue.create') createVenue(@Body() dto: CreateVenueDto, @CurrentUser() user: AuthUser) { return this.admin.createVenue(dto, user); }
   @Patch('venues/:slug') @Audit('venue.update') updateVenue(@Param('slug') slug: string, @Body() dto: UpdateVenueDto, @CurrentUser() user: AuthUser) { return this.admin.updateVenue(slug, dto, user); }
   @Put('venues/:slug/hours') @Audit('venue.hours') setVenueHours(@Param('slug') slug: string, @Body() dto: VenueHoursDto) { return this.admin.setVenueHours(slug, dto); }

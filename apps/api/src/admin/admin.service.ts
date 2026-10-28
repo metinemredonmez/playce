@@ -9,11 +9,15 @@ import { alcoholFlags } from '../moderation/alcohol';
 import { openStatus, weekFromMonday } from '../venues/hours';
 import { DEFAULT_EVENT_HOURS, HOUR_MS, trTodayWindow } from '../common/time';
 import { normalize, slugify } from '../common/text';
-import { endedWhere, notEndedWhere } from '../events/events.service';
+import { endedWhere, liveEventWhere, notEndedWhere } from '../events/events.service';
 import { findDuplicateEvents } from '../events/duplicates';
+import { findSimilarVenues } from '../venues/duplicates';
+import { districtNames } from '../venues/districts';
 import {
   AdminEventsQuery,
+  AdminVenuesQuery,
   CheckEventDto,
+  CheckVenueDto,
   CreateArtistDto,
   CreateEventDto,
   CreateStationDto,
@@ -28,6 +32,12 @@ import {
 /** Alkol denetiminden geçen metin alanları */
 const EVENT_TEXT = ['title', 'description', 'sellerName', 'totalPriceNote', 'refundPolicy'] as const;
 const VENUE_TEXT = ['name', 'description', 'doorPolicy', 'dressCode'] as const;
+/** Panelde "eksik alan" süzgeci ve iş kuyruğu sayıları */
+const VENUE_MISSING_WHERE: Record<'location' | 'hours' | 'cover', Prisma.VenueWhereInput> = {
+  location: { OR: [{ lat: null }, { lng: null }] },
+  hours: { hours: { none: {} } },
+  cover: { coverUrl: null },
+};
 
 @Injectable()
 export class AdminService {
@@ -324,6 +334,133 @@ export class AdminService {
   }
 
   // ---- mekân ----
+  /** Panel listesi → { items, nextCursor, total, missing }. missing = tüm mekânlarda eksik alan sayıları (iş kuyruğu). */
+  async listVenues(q: AdminVenuesQuery) {
+    const now = new Date();
+    const take = q.limit ?? 50;
+    const and: Prisma.VenueWhereInput[] = [];
+    const text = q.q ? normalize(q.q) : '';
+    if (text) and.push({ searchText: { contains: text } });
+    if (q.district) and.push({ district: { in: await districtNames(this.prisma, q.district) } });
+    if (q.genre) and.push({ genres: { some: { slug: q.genre } } });
+    if (q.source) and.push({ source: q.source });
+    if (q.missing) and.push(VENUE_MISSING_WHERE[q.missing]);
+    const where = { AND: and };
+    const [rows, total, location, hours, cover] = await Promise.all([
+      this.prisma.venue.findMany({
+        where,
+        orderBy: [{ name: 'asc' }, { id: 'asc' }],
+        take: take + 1,
+        ...(q.cursor ? { cursor: { id: q.cursor }, skip: 1 } : {}),
+        select: {
+          id: true,
+          slug: true,
+          name: true,
+          district: true,
+          coverUrl: true,
+          priceLevel: true,
+          ageLimit: true,
+          source: true,
+          lat: true,
+          lng: true,
+          description: true,
+          doorPolicy: true,
+          dressCode: true,
+          genres: { select: { slug: true, name: true, color: true }, orderBy: { sort: 'asc' } },
+          hours: { select: { weekday: true, opensAt: true, closesAt: true } },
+          _count: { select: { events: { where: liveEventWhere(now) }, follows: true } },
+        },
+      }),
+      this.prisma.venue.count({ where }),
+      ...(['location', 'hours', 'cover'] as const).map((m) => this.prisma.venue.count({ where: VENUE_MISSING_WHERE[m] })),
+    ]);
+    const items = rows.slice(0, take).map(({ _count, hours, lat, lng, description, doorPolicy, dressCode, ...v }) => ({
+      ...v,
+      hasLocation: lat !== null && lng !== null,
+      hasHours: hours.length > 0,
+      ...openStatus(hours, now),
+      upcomingEvents: _count.events,
+      followers: _count.follows,
+      flags: alcoholFlags(v.name, description, doorPolicy, dressCode),
+    }));
+    return { items, nextCursor: rows.length > take ? items[items.length - 1].id : null, total, missing: { location, hours, cover } };
+  }
+
+  /** Düzenleme formu: tüm alanlar, haftalık saatler, seçili ve varsayılan "mekânın sesi", sayılar. */
+  async getVenue(slug: string) {
+    const now = new Date();
+    const venue = await this.prisma.venue.findUnique({
+      where: { slug },
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        district: true,
+        address: true,
+        lat: true,
+        lng: true,
+        description: true,
+        coverUrl: true,
+        instagram: true,
+        phone: true,
+        website: true,
+        reservationUrl: true,
+        capacity: true,
+        priceLevel: true,
+        ageLimit: true,
+        doorPolicy: true,
+        dressCode: true,
+        source: true,
+        createdAt: true,
+        updatedAt: true,
+        genres: { select: { slug: true, name: true, color: true }, orderBy: { sort: 'asc' } },
+        hours: { select: { weekday: true, opensAt: true, closesAt: true } },
+        soundStation: { select: { slug: true, name: true, status: true } },
+        _count: { select: { events: { where: liveEventWhere(now) }, follows: true } },
+      },
+    });
+    if (!venue) throw new NotFoundException('Mekân bulunamadı');
+    // Varsayılan ses: türlerin sırasıyla, ilk çalışan istasyon (venues.service ile aynı kural)
+    const stations = await this.prisma.station.findMany({
+      where: { status: { not: 'DOWN' }, genre: { slug: { in: venue.genres.map((g) => g.slug) } } },
+      orderBy: { sort: 'asc' },
+      select: { slug: true, name: true, genre: { select: { slug: true } } },
+    });
+    const fallback = venue.genres.map((g) => stations.find((st) => st.genre.slug === g.slug)).find(Boolean);
+    const refs = await this.prisma.externalRef.findMany({
+      where: { entityType: 'venue', entityId: venue.id },
+      select: { source: true, externalId: true, url: true, syncedAt: true },
+    });
+    const { _count, hours, ...rest } = venue;
+    return {
+      ...rest,
+      hours: weekFromMonday(hours),
+      ...openStatus(hours, now),
+      defaultSound: fallback ? { slug: fallback.slug, name: fallback.name } : null,
+      upcomingEvents: _count.events,
+      followers: _count.follows,
+      refs,
+      flags: alcoholFlags(...VENUE_TEXT.map((f) => venue[f])),
+    };
+  }
+
+  /** Formun kaydetmeden önceki uyarıları: alkol denetimi ve olası aynı mekân (aynı ad ya da ~100 m). */
+  async checkVenue(dto: CheckVenueDto) {
+    const flags = alcoholFlags(...VENUE_TEXT.map((f) => dto[f]));
+    const self = dto.exclude ? await this.prisma.venue.findUnique({ where: { slug: dto.exclude }, select: { id: true } }) : null;
+    const found = await findSimilarVenues(this.prisma, { name: dto.name, lat: dto.lat, lng: dto.lng, excludeId: self?.id });
+    return { flags, duplicates: found.map(({ id: _id, lat: _lat, lng: _lng, ...d }) => d) };
+  }
+
+  /** "Mekânın sesi": slug → id; null = seçimi kaldır (ana türün varsayılanı); verilmezse dokunma. */
+  private async soundStation(slug: string | null | undefined) {
+    if (slug === undefined) return {};
+    if (slug === null) return { soundStationId: null };
+    const station = await this.prisma.station.findUnique({ where: { slug }, select: { id: true } });
+    if (!station) throw new BadRequestException(`Bilinmeyen istasyon: ${slug}`);
+    return { soundStationId: station.id };
+  }
+
   /** Mekânın durumu yok (REVIEW'a düşemez): alkol denetimine takılan metin kaydedilmez. */
   private guardVenue(texts: (string | null | undefined)[], allowFlagged: boolean | undefined, user: AuthUser) {
     const { flags, blocked } = this.moderation(texts, allowFlagged, user);
@@ -331,11 +468,16 @@ export class AdminService {
   }
 
   async createVenue(dto: CreateVenueDto, user: AuthUser) {
-    const { genreSlugs, slug, allowFlagged, ...data } = dto;
+    const { genreSlugs, slug, allowFlagged, soundStationSlug, ...data } = dto;
     this.guardVenue(VENUE_TEXT.map((f) => dto[f]), allowFlagged, user);
     try {
       return await this.prisma.venue.create({
-        data: { ...data, slug: slug ?? slugify(dto.name), genres: { connect: await this.genreIds(genreSlugs ?? []) } },
+        data: {
+          ...data,
+          ...(await this.soundStation(soundStationSlug)),
+          slug: slug ?? slugify(dto.name),
+          genres: { connect: await this.genreIds(genreSlugs ?? []) },
+        },
       });
     } catch (e) {
       this.notFound(e, 'Mekân');
@@ -343,7 +485,7 @@ export class AdminService {
   }
 
   async updateVenue(slug: string, dto: UpdateVenueDto, user: AuthUser) {
-    const { genreSlugs, allowFlagged, ...data } = dto;
+    const { genreSlugs, allowFlagged, soundStationSlug, ...data } = dto;
     if (VENUE_TEXT.some((f) => dto[f] !== undefined)) {
       const current = await this.prisma.venue.findUnique({ where: { slug }, select: { name: true, description: true, doorPolicy: true, dressCode: true } });
       if (!current) throw new NotFoundException('Mekân bulunamadı');
@@ -352,7 +494,11 @@ export class AdminService {
     try {
       return await this.prisma.venue.update({
         where: { slug },
-        data: { ...data, ...(genreSlugs ? { genres: { set: await this.genreIds(genreSlugs) } } : {}) },
+        data: {
+          ...data,
+          ...(await this.soundStation(soundStationSlug)),
+          ...(genreSlugs ? { genres: { set: await this.genreIds(genreSlugs) } } : {}),
+        },
       });
     } catch (e) {
       this.notFound(e, 'Mekân');
@@ -373,13 +519,15 @@ export class AdminService {
     return { id: venue.id, slug, hours: weekFromMonday(hours), ...openStatus(hours) };
   }
 
+  /** Etkinliği olan mekân silinmez: silme etkinlikleri de (kaydedenlerinkiyle) zincirleme siler. */
   async deleteVenue(slug: string) {
-    try {
-      const { id } = await this.prisma.venue.delete({ where: { slug } });
-      return { ok: true, id };
-    } catch (e) {
-      this.notFound(e, 'Mekân');
+    const venue = await this.prisma.venue.findUnique({ where: { slug }, select: { id: true, _count: { select: { events: true } } } });
+    if (!venue) throw new NotFoundException('Mekân bulunamadı');
+    if (venue._count.events) {
+      throw new BadRequestException(`Mekânın ${venue._count.events} etkinliği var: önce etkinlikleri sil ya da başka mekâna taşı`);
     }
+    await this.prisma.venue.delete({ where: { slug } });
+    return { ok: true, id: venue.id };
   }
 
   // ---- sanatçı ----

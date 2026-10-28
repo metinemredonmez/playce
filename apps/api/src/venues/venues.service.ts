@@ -80,11 +80,14 @@ export class VenuesService {
           select: eventCard,
         },
         hours: hoursSelect,
+        soundStation: { include: { genre: { select: { slug: true } } } },
       },
     });
     if (!v) throw new NotFoundException('Mekân bulunamadı');
-    const sound = v.genres.find((g) => g.stations.length)?.stations[0] ?? null;
-    const { searchText: _st, ...venue } = v;
+    // Elle seçilen istasyon (çalışıyorsa), yoksa ana türün varsayılanı
+    const chosen = v.soundStation && v.soundStation.status !== 'DOWN' ? v.soundStation : null;
+    const sound = chosen ?? v.genres.find((g) => g.stations.length)?.stations[0] ?? null;
+    const { searchText: _st, soundStation: _ss, soundStationId: _ssid, ...venue } = v;
     return {
       ...venue,
       ...openStatus(v.hours, now),
@@ -96,7 +99,7 @@ export class VenuesService {
         name: sound.name,
         streamUrl: sound.streamUrl,
         hasMetadata: sound.hasMetadata && sound.status === 'OK',
-        genre: v.genres.find((g) => g.stations[0]?.id === sound.id)?.slug ?? null,
+        genre: chosen ? chosen.genre.slug : (v.genres.find((g) => g.stations[0]?.id === sound.id)?.slug ?? null),
       },
     };
   }

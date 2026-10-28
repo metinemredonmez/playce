@@ -107,6 +107,7 @@ model Station {
 
   plays     PlayLog[]
   favoredBy FavoriteStation[]
+  soundOf   Venue[]           @relation("VenueSound")
 
   createdAt DateTime @default(now())
 
@@ -115,26 +116,34 @@ model Station {
 }
 
 model Venue {
-  id          String     @id @default(cuid())
-  slug        String     @unique
-  name        String
-  district    String
-  address     String?
-  lat         Float?
-  lng         Float?
-  description String?
-  coverUrl    String?
-  instagram   String?
+  id             String     @id @default(cuid())
+  slug           String     @unique
+  name           String
+  district       String
+  address        String?
+  lat            Float?
+  lng            Float?
+  description    String?
+  coverUrl       String?
+  instagram      String?
   /// 1-4 arası fiyat seviyesi (₺ … ₺₺₺₺)
-  priceLevel  Int?
-  source      DataSource @default(ADMIN)
+  priceLevel     Int?
+  source         DataSource @default(ADMIN)
   /// 18 = gece kulübü; etkinlikte ageLimit yoksa bu geçerli (ADR-015)
-  ageLimit    Int?
+  ageLimit       Int?
   /// Güven alanları (M17): "Seçici kapı, kimlik zorunlu" / "Spor ayakkabı kabul"
-  doorPolicy  String?
-  dressCode   String?
+  doorPolicy     String?
+  dressCode      String?
+  /// İletişim: "+90 212 …", web sitesi, rezervasyon sayfası
+  phone          String?
+  website        String?
+  reservationUrl String?
+  capacity       Int?
+  /// "Mekânın sesi" elle seçildiyse; boşsa ana türün ilk çalışan istasyonu
+  soundStationId String?
+  soundStation   Station?   @relation("VenueSound", fields: [soundStationId], references: [id], onDelete: SetNull)
   /// ad + semt, normalize — DB tetikleyicisi doldurur
-  searchText  String     @default("")
+  searchText     String     @default("")
 
   genres  Genre[]
   events  Event[]
