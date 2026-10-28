@@ -34,6 +34,9 @@ Luca'dan (lucaevent) **bağımsız** bir projedir; kendi backend'i vardır.
 7. **Bildirim yalnız `NotificationsService.notify()` ile üretilir** — tercih, sessiz saat ve `dedupeKey` orada uygulanır.
    Push'u worker gönderir (DB outbox, ADR-020); API'den doğrudan Expo çağrılmaz.
 8. **Env** `src/config/env.ts` (zod) ile doğrulanır; yeni değişkeni oraya ve `.env.example`'a ekle.
+9. **`searchText` sütunlarına yazma** — DB tetikleyicisi doldurur (ADR-023). `normalize()` (`src/common/text.ts`)
+   değişirse SQL'deki `playce_norm()` da yeni migration'la değişmeli.
+10. **Admin yazma uçlarına `@Audit('<tür>.<fiil>')`** ekle (AuditLog). Liste uçları `{ items, nextCursor }` döner.
 
 ## Mobil notları
 - Expo API'leri her SDK'da değişir: kod yazmadan önce `https://docs.expo.dev/versions/v58.0.0/` oku
@@ -44,13 +47,14 @@ Luca'dan (lucaevent) **bağımsız** bir projedir; kendi backend'i vardır.
 - `Link asChild` Pressable'ın fonksiyon stillerini uygulamıyor → kart bağlantıları için `PressLink`.
 
 ## Komutlar
-`pnpm dev:api` · `pnpm dev:worker` · `pnpm ios` · `pnpm db:create` · `pnpm db:migrate` · `pnpm db:seed` · `pnpm db:studio` · `pnpm typecheck` · `pnpm test:api`
+`pnpm dev:api` · `pnpm dev:worker` · `pnpm ios` · `pnpm db:create` · `pnpm db:migrate` · `pnpm db:seed` (temel + demo) · `pnpm db:seed:base` (yalnız tür/istasyon, prod) · `pnpm db:studio` · `pnpm typecheck` · `pnpm test:api`
 
 e2e testleri `apps/api/test/` altında, ayrı `<db>_test` veritabanında koşar (her çalıştırmada sıfırlanır).
 E-posta, Expo Push, radyo okuma ve Apple/Google anahtarları sahteyle değiştirilir (`test/utils.ts`).
 
 Yeni migration (headless, `migrate dev` TTY ister):
 `npx prisma migrate diff --from-url $DATABASE_URL --to-schema-datamodel prisma/schema.prisma --script > prisma/migrations/<ts>_name/migration.sql` → `pnpm db:migrate`.
+Prisma tetikleyici ve SQL fonksiyonlarını görmez (diff'e girmez); onları migration'a elle eklenir.
 
 ## Stil
 Türkçe açıklama/arayüz, kod İngilizce. Mevcut desenlere uy (Nest modül + DTO/class-validator; mobilde `C/S/R` tema sabitleri).

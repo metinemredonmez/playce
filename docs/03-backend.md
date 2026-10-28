@@ -1,7 +1,8 @@
 # 03 — Backend MVP
 
-> Durum (28 Eki 2026): Faz 1'in ilk yarısı bitti — kimlik, kullanıcı, takip/kaydet, bildirim ve PlayLog çalışıyor,
-> 43 e2e testi geçiyor. Kalanlar: [06-yol-haritasi.md](06-yol-haritasi.md) Faz 1 listesi.
+> Durum (28 Eki 2026): Faz 1 kodu büyük ölçüde bitti — kimlik, kullanıcı, takip/kaydet, bildirim, PlayLog, arama,
+> istasyon sağlığı, etkinlik filtreleri, AuditLog ve yerel türler çalışıyor; 70 e2e testi geçiyor.
+> Kalanlar (VPS'e yayın, mekân saatleri, Triton, güven alanları): [06-yol-haritasi.md](06-yol-haritasi.md) Faz 1 listesi.
 > Bu doküman MVP'ye (İstanbul lansmanı) kadar backend'in **hedef halini** tanımlar.
 > Kapsam ve öncelik: [02-mvp-kapsam.md](02-mvp-kapsam.md). Kararlar: [07-kararlar.md](07-kararlar.md).
 
@@ -45,22 +46,22 @@
 |---|---|---|
 | `auth` | E-posta OTP, Apple, Google girişi; JWT access (15 dk) + refresh (30 gün, rotasyonlu); global `AuthGuard` + `RolesGuard` | ✅ |
 | `users` | Profil, şehir, zevk (türler), KVKK onayları, hesap silme/dışa aktarma | ✅ |
-| `genres` | Tür listesi, renk, radioTag | var |
-| `stations` | Küratörlü istasyon + radio-browser araması, sağlık durumu | var → genişlet |
+| `genres` | 14 tür (yerel türler önce, ADR-016), renk, radioTag, `TagGenreMap` | ✅ |
+| `stations` | Küratörlü istasyon + radio-browser araması, saatlik sağlık işi | ✅ |
 | `radio` | ICY okuma, parça ayrıştırma, SSRF koruması | var |
 | `playlog` | Çalan parça kaydı, eşleşmeyen sanatçı kuyruğu, "radyoda çaldı" bildirimi | ✅ (istatistik uçları Faz 2) |
 | `artists` | Sanatçı, alias, eşleştirme indeksi, dış kimlikler, birleştirme | var → genişlet |
 | `venues` | Mekân, çalışma saatleri, fotoğraf, Google Place bağı, "mekânın sesi" | var → genişlet |
-| `events` | Etkinlik, lineup, durum akışı, bilet bağlantısı, seri | var → genişlet |
+| `events` | Etkinlik, lineup, REVIEW durumu, bilet satıcısı, filtreler + cursor, `.ics` | ✅ (seri yok) |
 | `discover` | `/discover/now` köprüsü, ana sayfa akışı, öneri skoru | var → genişlet |
-| `search` | Sanatçı/mekân/etkinlik/istasyon birleşik arama (pg_trgm) | yeni |
+| `search` | Sanatçı/mekân/etkinlik/istasyon birleşik arama (pg_trgm, ADR-023) | ✅ |
 | `social` | Takip (sanatçı/mekân), kaydet/gidiyorum, favori istasyon, cihazdan birleştirme | ✅ (mobil bağlantısı Faz 4) |
 | `notifications` | Push token, bildirim kutusu, tercih, Expo gönderici, fan-out, hatırlatma | ✅ (kampanya Faz 2) |
 | `submissions` | Organizatör/mekân başvurusu, moderasyon | yeni |
 | `media` | Görsel yükleme (presigned URL), boyutlandırma | yeni |
 | `ingest` | Dış kaynaklardan etkinlik/sanatçı içe aktarma, tekilleştirme | yeni |
-| `admin` | Rol tabanlı admin uçları, dashboard metrikleri | JWT+rol ✅ (key geçiş dönemi), AuditLog yok |
-| `audit` | Admin değişiklik kaydı | yeni |
+| `admin` | Rol tabanlı admin uçları, dashboard metrikleri | JWT+rol ✅ (key geçiş dönemi), dashboard Faz 2 |
+| `audit` | Admin değişiklik kaydı (`@Audit()` + global interceptor) | ✅ |
 | `health` | `/health`, `/health/deep` (DB, push kuyruğu gecikmesi) | var → genişlet |
 
 ## 3. Veri modeli (hedef)
@@ -397,15 +398,15 @@ Liste uçları **cursor** sayfalama: `?cursor=<id>&limit=20` → `{ items, nextC
 | `GET /v1/stations/search?q&tag&country` | 🔓 | radio-browser araması (10 dk cache) |
 | `GET /v1/radio/now-playing?url=` | 🔓 | ICY başlığı → `{raw, artist, title}` |
 | `GET /v1/discover/now?url&genre` | 🔓 | Çalan parça + sanatçı eşleşmesi + konserleri + türün bu geceki etkinlikleri + mekânlar |
-| `GET /v1/events?when&from&to&genre&district&free&priceMax&near&radiusKm&sort&cursor` | 🔓 | `when`: tonight/tomorrow/weekend/upcoming; `sort`: soonest/nearest/popular |
+| `GET /v1/events?when&from&to&genre&venue&artist&district&free&priceMax&near&radiusKm&sort&cursor&limit` | 🔓 | ✅ `{items, nextCursor}`. `when`: tonight/tomorrow/weekend/upcoming; `from/to`: İstanbul günü ya da ISO; `priceMax` kuruş; `near=lat,lng` → `distanceKm`; `sort`: soonest/nearest (popular sonra) |
 | `GET /v1/events/:slug` | 🔓 | Detay + lineup + mekân + benzer etkinlikler |
-| `GET /v1/events/:slug/ics` | 🔓 | Takvime ekle dosyası |
+| `GET /v1/events/:slug/ics` | 🔓 | ✅ Takvime ekle dosyası (iptalde `STATUS:CANCELLED`) |
 | `GET /v1/venues?genre&district&openNow&near&cursor` | 🔓 | Bu gece açık olanlar önce |
 | `GET /v1/venues/:slug` | 🔓 | Detay + saatler + fotoğraflar + program + "mekânın sesi" |
 | `GET /v1/artists/:slug` | 🔓 | Detay + konserler + `onRadio` (son 7 günde çaldığı istasyonlar, PlayLog) |
 | `GET /v1/stations/:slug/plays?limit` | 🔓 | İstasyonda son çalanlar (eşleşen sanatçıyla) |
-| `GET /v1/search?q` | 🔓 | `{ artists, venues, events, stations }` — Türkçe karakter duyarsız |
-| `GET /v1/districts` | 🔓 | Semt listesi (filtre için) |
+| `GET /v1/search?q` | 🔓 | ✅ `{ artists, venues, events, stations }` — Türkçe karakter ve küçük yazım hatası duyarsız; etkinlikte lineup da aranır |
+| `GET /v1/districts` | 🔓 | ✅ `[{slug, name, venues}]` — `district` filtresi slug ya da adı kabul eder |
 | `POST /v1/submissions` | 🔓 | Organizatör etkinlik/mekân başvurusu (rate limit + captcha) |
 
 ### 4.2 Kimlik
@@ -446,7 +447,7 @@ Liste uçları **cursor** sayfalama: `?cursor=<id>&limit=20` → `{ items, nextC
 | Mekân | CRUD + `POST venues/:id/hours`, `GET places/search?q` (Google Places), `POST venues/:id/import-place` | EDITOR+ |
 | Sanatçı | CRUD + `POST artists/:id/merge {intoId}`, `POST artists/:id/aliases`, `GET artists/lookup?q` (MusicBrainz) | EDITOR+ |
 | Eşleşmeyenler | `GET unmatched?status&sort=plays`, `POST unmatched/:key/{link,create,ignore}` | EDITOR+ |
-| İstasyon | CRUD + `POST stations/:id/test` (bağlan + ICY oku), `GET stations/health` | EDITOR+ |
+| İstasyon | CRUD + `POST stations/:slug/test` (bağlan + ICY oku) ✅, `GET stations/health` ✅ | EDITOR+ |
 | Tür | CRUD + sıra | ADMIN |
 | Başvurular | `GET submissions?status`, `POST submissions/:id/{approve,reject}` | MODERATOR+ |
 | Öne çıkanlar | CRUD `featured` | EDITOR+ |
@@ -454,7 +455,7 @@ Liste uçları **cursor** sayfalama: `?cursor=<id>&limit=20` → `{ items, nextC
 | Kullanıcı | `GET users?q`, `GET users/:id`, `POST users/:id/{ban,unban,delete}`, rol atama | ADMIN (rol: SUPERADMIN) |
 | Medya | `POST uploads/presign {kind, contentType}` → `{url, fields, publicUrl}` | EDITOR+ |
 | İçe aktarma | `POST imports/:source/run`, `GET imports` | ADMIN |
-| Denetim | `GET audit?entityType&entityId&actor` | ADMIN |
+| Denetim | `GET audit?entityType&entityId&actor&cursor` ✅ | ADMIN |
 
 ## 5. Arka plan işleri (`playce-worker`, `src/jobs/jobs.service.ts`)
 

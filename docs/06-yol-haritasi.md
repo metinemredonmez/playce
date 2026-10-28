@@ -24,19 +24,19 @@
 - [x] `social`: `ArtistFollow`, `VenueFollow`, `SavedEvent`, `FavoriteStation` (idempotent PUT/DELETE) + cihazdan birleştirme ucu.
 - [x] `notifications`: push token, bildirim kutusu, tercihler, Expo Push gönderici, makbuz işi, fan-out, hatırlatma (DB outbox, ADR-020).
 - [x] `playlog`: poller işi (worker), `PlayLog`, `UnmatchedArtist` + admin kuyruğu, sanatçı "radyoda çaldı" bildirimi.
-- [ ] `stations`: sağlık işi, `status` alanları; uygulama `DOWN` olanları görmez.
-- [ ] `search`: `pg_trgm` + normalize edilmiş `searchText` sütunları; `/v1/search`.
-- [ ] `events`: `REVIEW` durumu, `isFree/ageLimit/doorsAt/ticketProvider`, `/ics`, cursor sayfalama, `near`/`district`/`priceMax` filtreleri.
+- [x] `stations`: saatlik sağlık işi, `status/failCount/lastError/codec/bitrate`; `DOWN` uygulamada (liste, arama, mekânın sesi) görünmez, `NO_METADATA` çalar ama "şu an çalan" sorulmaz; admin `stations/health` + `:slug/test`.
+- [x] `search`: `pg_trgm` + tetikleyiciyle tutulan `searchText`; `/v1/search` Türkçe karakter ve yazım hatası toleranslı (ADR-023).
+- [x] `events`: `REVIEW` durumu, `isFree/ageLimit/doorsAt/ticketProvider` (satıcı linkten çıkarılır), `/ics`, cursor sayfalama, `when=tomorrow`, `from/to`, `near`/`district`/`free`/`priceMax` filtreleri; `GET /v1/districts`.
 - [ ] `venues`: `VenueHours`, "şimdi açık", Google Place alanları, `Media`.
-- [ ] `admin`: ~~`X-Admin-Key` → JWT + roller~~ ✅ (key geçiş dönemi için duruyor); `AuditLog` interceptor'ı.
+- [x] `admin`: ~~`X-Admin-Key` → JWT + roller~~ ✅ (key geçiş dönemi için duruyor); `AuditLog` (`@Audit()` + global interceptor, `GET /v1/admin/audit` ADMIN).
 - [x] `/v1` öneki (yayında eski sürüm olmadığı için yönlendirme gerekmedi; mobil güncellendi).
-- [ ] Seed'i ikiye böl: `seed:base` (tür + istasyon, prod) / `seed:demo` (yalnız geliştirme).
-- [ ] Yerel türler (ADR-016): Türkçe Rap, Arabesk & Fantezi, Anadolu Rock, Fasıl & Türk Sanat; `TagGenreMap` ilk sürümü.
+- [x] Seed'i ikiye böl: `db:seed:base` (tür + etiket + istasyon, prod'da da çalışır) / `db:seed` (temel + demo, prod'da çalışmaz).
+- [x] Yerel türler (ADR-016): Türkçe Rap, Arabesk & Fantezi, Anadolu & Türkçe Rock, Fasıl & Türk Sanat (14 tür, 8 yeni istasyon); `TagGenreMap` ilk sürümü (~90 etiket).
 - [ ] `radio`: Karnaval istasyonları için Triton now-playing XML (sanatçı, parça, kapak); ICY'ye düşme.
 - [ ] Güven alanları (`sellerName`, `refundPolicy`, `doorPolicy`, `dressCode`) ve alkol anahtar kelime denetimi → `REVIEW` (ADR-015).
 - [ ] `ingest:etkinlikio` (token gelince) ve Ticketmaster `countryCode=TR` deneme betiği.
 - [ ] **Yayın:** VPS'te Postgres kullanıcı/DB, `playce-api` + `playce-worker` (pm2), nginx + certbot (`api.<alan-adı>`), gece `pg_dump`, Sentry.
-- [ ] e2e: ~~auth, takip/kaydet, admin yayınla → fan-out, bildirim, PlayLog~~ ✅ (43 test); discover ve events filtreleri kaldı.
+- [x] e2e: auth, takip/kaydet, fan-out, bildirim, PlayLog, arama, istasyon sağlığı, etkinlik filtreleri, AuditLog, seed, discover (70 test).
 
 ## Faz 2 — Admin paneli (Hafta 3–4)
 - [ ] `apps/admin` Next.js 15 + shadcn iskeleti, OTP girişi, rol bazlı menü.

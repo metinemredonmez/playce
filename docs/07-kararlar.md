@@ -80,6 +80,11 @@ Her önemli karar burada: bağlam → karar → sonuç. Yeni karar en alta, numa
   - Arabesk & Fantezi eklenir.
   - Anadolu Rock eklenir (Rock'tan ayrılır).
   - Fasıl & Türk Sanat eklenir.
+- **Uygulama (Faz 1, 28 Eki 2026):** 14 tür, yerel olanlar listede önce. Anadolu Rock'un adı **"Anadolu & Türkçe Rock"**:
+  yalnız 70'ler Anadolu rock'ını çalan HTTPS yayın bulunamadı; Joy Türk Rock ve Türk Rock FM Türkçe rock çalıyor
+  (Duman, maNga, Athena), dinleyici de bu ayrımı "Türkçe Pop / Pop" gibi görüyor. "Rock" yabancı rock olarak kalır.
+  Fasıl'ın tek istasyonu TRT Nağme (HLS, "şu an çalan" yok). `TagGenreMap` ilk sürümü ~90 etiket (`prisma/seed/base.ts`);
+  Faz 3'te müzik hesabı etiketlerini çevirmek için kullanılacak.
 
 ## ADR-017 · Veri edinme sırası ve kazıma yasağı
 - **Karar:** Etkinlik verisi şu sırayla edinilir:
@@ -131,3 +136,16 @@ Her önemli karar burada: bağlam → karar → sonuç. Yeni karar en alta, numa
     (takip/kaydet satırları kimliksiz kalır, toplam sayılar bozulmasın).
   - Admin uçları `@Roles('EDITOR')`; geçiş dönemi için `X-Admin-Key` hâlâ kabul edilir (Faz 2'de admin paneli
     OTP girişiyle kalkacak).
+
+## ADR-023 · Arama: Postgres pg_trgm + tetikleyiciyle tutulan searchText
+- **Bağlam:** Arama Türkçe karakter duyarsız olmalı ("dedubluman" → Dedublüman) ve küçük yazım hatalarını tolere etmeli.
+  Veri küçük (yüzlerce mekân, binlerce sanatçı/etkinlik); ayrı arama servisi (Meilisearch vb.) VPS'e yük ve senkron derdi getirir.
+- **Karar:**
+  - `Artist`, `Venue`, `Event`, `Station` tablolarında `searchText` sütunu + GIN trigram indeksi (`pg_trgm`).
+  - Sütunu **veritabanı tetikleyicisi** doldurur (`playce_search_text()`); uygulama hiç yazmaz. Böylece admin, seed,
+    PlayLog'dan sanatçı açma ya da ham SQL — hiçbir yazma yolu unutamaz.
+  - Normalize kuralı iki yerde aynı: `playce_norm()` (SQL, `unaccent`) ve `normalize()` (`src/common/text.ts`).
+    Biri değişirse diğeri de değişir; e2e testi ikisini karşılaştırır.
+  - Eşleşme: tam önek, kelime öneki ya da (4+ harfte) `word_similarity ≥ 0.4`. Eşik işlem içinde `set_config` ile verilir.
+- **Sonuç:** Ek servis yok. `pg_trgm` ve `unaccent` PG13+'da "trusted" eklenti; DB sahibi kullanıcı migration'da kurabilir
+  (VPS kurulumunda kontrol et). Ölçek büyürse (100 bin+ satır, çok dilli) ayrı arama servisi yeniden değerlendirilir.

@@ -31,10 +31,12 @@ radyo yayını ──ICY──▶ "Sanatçı - Parça" ──▶ sanatçı eşle
 ```
 
 `Genre` her şeyin eksenidir: istasyonlar, etkinlikler, mekânlar ve sanatçılar türlere bağlıdır.
+14 tür var; yerel türler (Türkçe Rap, Arabesk & Fantezi, Anadolu & Türkçe Rock, Türkü, Fasıl) birinci sınıftır (ADR-016).
 Oynatıcının altındaki "Bu sesin canlısı" bölümü tek çağrıyla `GET /v1/discover/now?url=&genre=` ile beslenir.
 
 İki süreç aynı kodu çalıştırır: **API** (HTTP) ve **worker** (push gönderimi, takipçilere "yeni etkinlik",
-kaydedilen etkinlik hatırlatması, dakikada bir radyo yoklayıcısı → `PlayLog`, gece temizliği).
+kaydedilen etkinlik hatırlatması, dakikada bir radyo yoklayıcısı → `PlayLog`, saatlik istasyon sağlığı, gece temizliği).
+3 kontrol üst üste yanıt vermeyen istasyon (`DOWN`) uygulamada gizlenir, düzelince kendiliğinden geri gelir.
 
 ## İlk kurulum
 
@@ -44,7 +46,7 @@ pnpm install
 cp apps/api/.env.example apps/api/.env   # DATABASE_URL, ADMIN_KEY, JWT_SECRET (openssl rand -base64 48)
 pnpm db:create          # yerel Postgres'te playce_dev
 pnpm db:migrate
-pnpm db:seed            # demo tür/istasyon/mekân/sanatçı/etkinlik
+pnpm db:seed            # temel veri (tür, istasyon) + demo mekân/sanatçı/etkinlik
 ```
 
 ## Günlük geliştirme
@@ -68,6 +70,8 @@ Telefonda Expo Go ile açınca uygulama API'yi Metro'yu sunan bilgisayarın IP's
 - Access token 15 dk; refresh token her yenilemede döner (`/v1/auth/refresh`). Eski refresh token sonradan
   tekrar gelirse kullanıcının tüm oturumları kapanır.
 - Uçlar **varsayılan olarak giriş ister**; herkese açık olanlar `@Public()` ile işaretlidir.
+- Arama: `GET /v1/search?q=` Türkçe karakter ve küçük yazım hatası duyarsız ("dedubluman", "tarkn").
+- Liste uçları sayfalı: `{ items, nextCursor }` → sonraki sayfa `?cursor=<nextCursor>`.
 - Kullanıcı uçları `/v1/me/*`: profil, KVKK (onaylar, veri indir, hesap sil), takip, kaydet, favori istasyon,
   bildirim kutusu ve tercihleri. Ayrıntı: [03-backend.md §4.3](docs/03-backend.md).
 
@@ -83,15 +87,21 @@ için `X-Admin-Key`. Rol vermek için şimdilik: `UPDATE "User" SET role='ADMIN'
 | `POST/PATCH/DELETE /v1/admin/artists` | Sanatçı (+ `aliases`: radyo başlığındaki farklı yazılışlar) |
 | `POST/PATCH/DELETE /v1/admin/stations` | Küratörlü istasyon (yalnız HTTPS) |
 | `GET /v1/admin/unmatched` · `POST …/:key/{link,create,ignore}` | Radyoda çalıp veritabanında olmayan sanatçılar (en çok çalan üstte) |
+| `GET /v1/admin/stations/health` · `POST …/stations/:slug/test` | İstasyon sağlığı; "test et" yayına hemen bağlanıp çalan parçayı da gösterir |
+| `GET /v1/admin/audit` | Denetim kaydı: her admin yazması kim/ne/hangi kayıt/gönderilen alanlarla (ADMIN rolü) |
 
-Para kuruş cinsindendir: 450 TL = `45000`.
+Para kuruş cinsindendir: 450 TL = `45000`. `priceFrom: 0` girilirse etkinlik ücretsiz sayılır; bilet satıcısı
+(`ticketProvider`) verilmezse Biletix/Passo/Bubilet/Biletinial/Mobilet linkinden çıkarılır. `status: "REVIEW"` uygulamada görünmez.
 
 ## Demo verisi
 
-`pnpm db:seed` gerçek İstanbul mekân adları ve sanatçılarla **kurgusal** etkinlikler üretir
-(`source = DEMO`, uygulamada "DEMO" rozetiyle görünür). Tarihler seed'in çalıştığı güne göre
-hesaplanır; her çalıştırma "bu gece" listesini tazeler. Yayına almadan önce demo etkinlikleri sil
-ve gerçek verilerle değiştir.
+İki seed var (`apps/api/prisma/seed/`):
+
+- `pnpm db:seed:base` — türler, tür etiket eşlemesi (`TagGenreMap`) ve küratörlü istasyonlar. **Üretimde de çalışır**;
+  admin tür/istasyon ekranı gelene kadar (Faz 2) bu listeler koddan yönetilir.
+- `pnpm db:seed` — temel veri + gerçek İstanbul mekân adları ve sanatçılarla **kurgusal** etkinlikler
+  (`source = DEMO`, uygulamada "DEMO" rozetiyle görünür). Tarihler seed'in çalıştığı güne göre hesaplanır;
+  her çalıştırma "bu gece" listesini tazeler. `NODE_ENV=production` iken çalışmaz.
 
 ## Bilinen sınırlar
 
