@@ -2,18 +2,17 @@ import type { Metadata } from 'next';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { api } from '@/lib/api';
+import { SOURCE_LABEL } from '@/lib/events';
 import { trDateTime } from '@/lib/format';
 import { getMe } from '@/lib/me';
 import { hasRole } from '@/lib/roles';
-import type { Page, ReviewEvent } from '@/lib/types';
+import type { EventPage } from '@/lib/types';
 import { ReviewActions } from './review-actions';
 
 export const metadata: Metadata = { title: 'Moderasyon' };
 
-const SOURCE: Record<ReviewEvent['source'], string> = { ADMIN: 'Admin', IMPORT: 'İçe aktarma', DEMO: 'Demo' };
-
 export default async function ModerationPage() {
-  const [me, page] = await Promise.all([getMe(), api<Page<ReviewEvent>>('/admin/events?status=REVIEW&limit=100')]);
+  const [me, page] = await Promise.all([getMe(), api<EventPage>('/admin/events?status=REVIEW&limit=100')]);
   const canOverride = hasRole(me.role, 'MODERATOR');
 
   return (
@@ -38,7 +37,7 @@ export default async function ModerationPage() {
                 <span className="tabular-nums">{trDateTime(e.startsAt)}</span>
                 <span>·</span>
                 <span>{e.venue.name}</span>
-                <Badge variant="outline">{SOURCE[e.source]}</Badge>
+                <Badge variant="outline">{SOURCE_LABEL[e.source]}</Badge>
               </div>
               <CardTitle className="text-lg">{e.title}</CardTitle>
               <div className="flex flex-wrap gap-1">

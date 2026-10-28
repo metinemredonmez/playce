@@ -42,7 +42,10 @@
 - [x] `apps/admin` Next.js 16 + shadcn iskeleti, OTP girişi (httpOnly çerez, sessiz yenileme — ADR-025), rol bazlı menü ve kuyruk rozetleri.
 - [x] **Moderasyon** kuyruğu: alkol bayrakları, metni düzelt ve yayınla (yeniden denetim), "yine de yayınla" (MODERATOR+), taslağa al.
 - [ ] Gösterge paneli (KPI'lar, iş kuyrukları, en çok çalanlar).
-- [ ] Etkinlik liste + form (lineup sürükle-bırak, olası kopya uyarısı, canlı mobil önizleme, zamanlanmış yayın).
+- [x] **Etkinlikler** liste + form: durum sekmeleri (sayılı), tarih/tür/mekân/kaynak/eksik alan süzgeçleri, arama, toplu yayınla/taslağa al/iptal;
+      form bölümleri (temel, zaman — İstanbul saati, yer + hızlı mekân, tür çipleri, lineup sırası + hızlı sanatçı, bilet ve güven şablonları),
+      yazarken alkol denetimi ve olası kopya uyarısı, kapak onay kutusu, gelecek haftaya kopyala, ⌘S / ⌘↵.
+      Kalan: kapak yükleme (görsel deposu), canlı mobil önizleme, zamanlanmış yayın, yinelenen seri, CSV dışa aktarma.
 - [ ] Mekân liste + form (Google Places'ten doldur, harita pini, saatler, ses profili, galeri).
 - [ ] Sanatçı liste + form (MusicBrainz'den bul, alias, birleştir, radyo geçmişi).
 - [x] **Eşleşmeyenler** kuyruğu: oluştur (türler istasyondan önerilir) / bağla (yazım hatası toleranslı arama) / yoksay / geri al; çaldığı istasyonlar.

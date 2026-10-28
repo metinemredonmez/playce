@@ -25,7 +25,7 @@ export const NAV: { title: string; items: NavItem[] }[] = [
   {
     title: 'İçerik',
     items: [
-      { href: '/etkinlikler', label: 'Etkinlikler', min: 'EDITOR', soon: true, icon: 'events' },
+      { href: '/etkinlikler', label: 'Etkinlikler', min: 'EDITOR', icon: 'events' },
       { href: '/mekanlar', label: 'Mekânlar', min: 'EDITOR', soon: true, icon: 'venues' },
       { href: '/sanatcilar', label: 'Sanatçılar', min: 'EDITOR', soon: true, icon: 'artists' },
       { href: '/istasyonlar', label: 'İstasyonlar', min: 'EDITOR', badge: 'stationsDown', icon: 'stations' },

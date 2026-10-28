@@ -444,7 +444,8 @@ Liste uçları **cursor** sayfalama: `?cursor=<id>&limit=20` → `{ items, nextC
 | Grup | Uçlar | Rol |
 |---|---|---|
 | Dashboard | `GET stats/overview`, `GET stats/plays?range`, `GET stats/funnel` | EDITOR+ |
-| Etkinlik | `GET events?status` ✅ (moderasyon kuyruğu, alkol bayraklarıyla), `POST/PATCH/DELETE events/:slug` ✅, `POST events/:id/{publish,unpublish,cancel,duplicate}`, `POST events/bulk` | EDITOR+ (`allowFlagged`: MODERATOR+) |
+| Etkinlik | `GET events?status&when&q&genre&venue&source&missing&cursor` ✅ (liste + moderasyon kuyruğu; alkol bayrakları, `counts` = durum dağılımı), `GET events/:slug` ✅ (form: lineup sırası, kaydetme, dış kaynaklar), `POST events/check` ✅ (kaydetmeden önce alkol bayrağı + olası kopya; yazmaz), `POST/PATCH/DELETE events/:slug` ✅. Kurallar: kapı ≤ başlangıç < bitiş; bitmiş etkinlik yayına alınamaz. Toplu durum ve kopyalama panelde (tek tek PATCH / formu doldur) | EDITOR+ (`allowFlagged`: MODERATOR+) |
+| Seçiciler | `GET lookup/venues?q`, `GET lookup/artists?q` ✅ (Türkçe karakter + yazım hatası duyarsız, 10 sonuç) | EDITOR+ |
 | Mekân | CRUD ✅ + `PUT venues/:slug/hours` ✅, `GET places/search?q` (Google Places), `POST venues/:id/import-place` | EDITOR+ |
 | Sanatçı | CRUD + `POST artists/:id/merge {intoId}`, `POST artists/:id/aliases`, `GET artists/lookup?q` (MusicBrainz) | EDITOR+ |
 | Eşleşmeyenler | `GET unmatched?status&sort=plays`, `POST unmatched/:key/{link,create,ignore}` | EDITOR+ |

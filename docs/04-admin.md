@@ -4,14 +4,15 @@
 > Uygulamanın değeri verinin kapsamına bağlı: radyoda çalan sanatçıların ne kadarı DB'de,
 > bu gecenin ne kadar etkinliği girilmiş. Panel bu iki sayıyı büyütmek için tasarlanır.
 
-> Durum (28 Eki 2026): iskelet, e-posta kodu ile giriş, rol bazlı menü; **Moderasyon**, **Eşleşmeyenler**, **İstasyonlar**
-> (sağlık + test et), **İçe aktarma** ve **Denetim kaydı** ekranları hazır.
+> Durum (28 Eki 2026): iskelet, e-posta kodu ile giriş, rol bazlı menü; **Moderasyon**, **Eşleşmeyenler**, **Etkinlikler**
+> (liste + form), **İstasyonlar** (sağlık + test et), **İçe aktarma** ve **Denetim kaydı** ekranları hazır.
 > Diğer menü öğeleri "yakında" olarak görünür. Yayın alan adı + SMTP'yi bekliyor ([09](09-yayin.md)).
 
 ## 1. Teknoloji
 
 - `apps/admin` — **Next.js 16 (App Router) + Tailwind 4 + shadcn/ui (Radix)** — port 3031.
-  TanStack Table + React Hook Form + Zod büyük liste/form ekranlarıyla (etkinlik, mekân) eklenecek; ilk iki kuyruk ekranında gerekmedi.
+  TanStack Table / React Hook Form / Zod eklenmedi: etkinlik ekranında da gerekmedi. Liste süzgeçleri adres satırında
+  (sunucu sayfası), seçim/toplu işlem küçük bir istemci bileşeni; form kontrollü durum + server action, kurallar API'de de var.
 - Next 16'da `middleware` → `proxy.ts`. Kod yazmadan önce sürümün kendi dokümanı: `node_modules/next/dist/docs/`.
 - **Oturum (ADR-025):** token'lar tarayıcıya gitmez — Next sunucusu API'yi kullanıcı adına çağırır, access/refresh token
   httpOnly çerezde. `src/proxy.ts` süresi dolmak üzere olan access token'ı refresh ile sessizce yeniler.
@@ -86,6 +87,14 @@ Panel
   kırmızı uyarı, yayın engellenir; kapak görseli "alkol markası/ürünü yok" onay kutusuyla yayınlanır. Gece içeriğinde yaş sınırı 18 varsayılan.
 - **Güven alanları (M17):** satıcı, hizmet bedeli notu, iade koşulu (şablonlardan seçilebilir), kapı/kıyafet kuralı.
 - **Sağ panel önizleme:** mobil etkinlik kartı ve detay sayfası canlı önizleme.
+
+> **Yapılan (28 Eki 2026):** liste (sekme sayıları, süzgeçler, arama, toplu yayınla/taslağa al/iptal, mekâna tıkla → süz),
+> form (bölümler, İstanbul saati + hızlı süre düğmeleri, mekân arama + hızlı ekle, tür çipleri, lineup sırası + hızlı sanatçı,
+> TL girişi → kuruş, satıcı linkten otomatik, güven şablonları, yazarken alkol + olası kopya uyarısı, kapak onayı,
+> "yanlış alarm" MODERATOR+, gelecek haftaya kopyala, sil — kayıt varsa "iptal et" önerilir, ⌘S / ⌘↵, kaydedilmemiş değişiklik uyarısı).
+> **Kalan:** kapak yükleme ve kırpma (görsel deposu — R2/S3 kararı), sürükle-bırak sıralama (şimdilik yukarı/aşağı),
+> canlı mobil önizleme, zamanlanmış yayın, yinelenen seri, "takipçilere bildir" anahtarı (bugün yayına çıkışta otomatik),
+> toplu "tür ata", arşiv durumu, CSV dışa aktarma ve kaydedilebilir görünüm.
 
 ### 4.3 Mekânlar
 **Liste:** ad, semt, türler, fiyat seviyesi, bu gece açık mı, yaklaşan etkinlik sayısı, takipçi, "konum yok"/"saat yok" uyarıları.

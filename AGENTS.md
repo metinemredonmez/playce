@@ -22,6 +22,9 @@ Luca'dan (lucaevent) **bağımsız** bir projedir; kendi backend'i vardır.
 - `apps/admin` Next.js 16 (App Router) + Tailwind 4 + shadcn/ui (Radix), port 3031. **Next 16 eğitim verisinden yeni:**
   kod yazmadan önce `node_modules/next/dist/docs/` oku (`middleware` → `proxy.ts`, `cookies()` async, mutasyon sonrası `refresh()`).
   Token tarayıcıya gitmez: API çağrıları sunucuda `src/lib/api.ts` ile (ADR-025). Yeni ekran → `src/lib/nav.ts`'e rolüyle ekle.
+  `'use client'` dosyasından sabit/fonksiyon sunucu bileşenine aktarılamaz (istemci referansı gelir): paylaşılan sabitler `src/lib/`'te.
+  Sunucu bileşeninden istemciye fonksiyon prop'u geçmez; hazır veri (ör. href haritası) ya da server action geç.
+  Formlar: React Hook Form / Zod yok — kontrollü durum + server action, doğrulama hem istemcide hem API'de (`etkinlikler/event-form.tsx`).
 - `apps/mobile` Expo SDK 58 + Expo Router (src/app), NativeTabs, expo-audio
 - Node 22 (`.nvmrc`). Expo 58, Node 20'de uyarı verir.
 

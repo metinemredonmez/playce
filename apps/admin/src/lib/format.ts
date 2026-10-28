@@ -19,3 +19,33 @@ export function ago(iso: string | Date): string {
   if (s < 86_400) return `${Math.round(s / 3600)} sa önce`;
   return `${Math.round(s / 86_400)} gün önce`;
 }
+
+/** <input type="datetime-local"> değeri ("2030-11-01T21:00", İstanbul saati) ← ISO */
+export function toTrInput(iso: string | null | undefined): string {
+  if (!iso) return '';
+  return new Date(new Date(iso).getTime() + TR_OFFSET_MS).toISOString().slice(0, 16);
+}
+
+/** İstanbul saatiyle girilen "2030-11-01T21:00" → "2030-11-01T21:00:00+03:00" (API UTC saklar) */
+export function fromTrInput(local: string): string | null {
+  return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(local) ? `${local}:00+03:00` : null;
+}
+
+/** Kuruş → form değeri: 45000 → "450", 45050 → "450,50" */
+export function kurusToInput(k: number | null | undefined): string {
+  if (k == null) return '';
+  return k % 100 === 0 ? String(k / 100) : (k / 100).toFixed(2).replace('.', ',');
+}
+
+/** Form değeri → kuruş ("450" / "450,50" / "1.250"). Boş = null, geçersiz = NaN. */
+export function inputToKurus(v: string): number | null {
+  const s = v.trim().replace(/\s|₺|TL/gi, '');
+  if (!s) return null;
+  const n = Number(s.replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.'));
+  return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) : NaN;
+}
+
+/** 45000 → "450 ₺" */
+export function tl(k: number): string {
+  return `${(k / 100).toLocaleString('tr-TR', { maximumFractionDigits: 2 })} ₺`;
+}

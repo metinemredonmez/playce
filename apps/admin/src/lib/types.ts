@@ -1,12 +1,15 @@
 // Admin API yanıtları (apps/api/src/admin, playlog). Yalnız panelin kullandığı alanlar.
 export type Queues = { reviewEvents: number; unmatchedOpen: number; stationsDown: number };
 
+export type EventStatus = 'DRAFT' | 'REVIEW' | 'PUBLISHED' | 'CANCELLED';
+export type DataSource = 'DEMO' | 'ADMIN' | 'IMPORT';
+
 export type ReviewEvent = {
   id: string;
   slug: string;
   title: string;
-  status: 'DRAFT' | 'REVIEW' | 'PUBLISHED' | 'CANCELLED';
-  source: 'DEMO' | 'ADMIN' | 'IMPORT';
+  status: EventStatus;
+  source: DataSource;
   startsAt: string;
   coverUrl: string | null;
   description: string | null;
@@ -18,6 +21,60 @@ export type ReviewEvent = {
 };
 
 export type Page<T> = { items: T[]; nextCursor: string | null };
+
+/** GET /admin/events öğesi (moderasyon alanları + liste sütunları) */
+export type EventRow = ReviewEvent & {
+  endsAt: string | null;
+  ticketUrl: string | null;
+  priceFrom: number | null;
+  isFree: boolean;
+  genres: Genre[];
+  saves: number;
+};
+/** counts: durum dışındaki süzgeçlere göre durum dağılımı (sekme rozetleri) */
+export type EventPage = Page<EventRow> & { counts: Partial<Record<EventStatus, number>> };
+
+export type TicketProvider = 'BILETIX' | 'PASSO' | 'BUBILET' | 'BILETINIAL' | 'MOBILET' | 'ETKINLIKIO' | 'TICKETMASTER';
+export type VenueHit = { slug: string; name: string; district: string; ageLimit: number | null };
+
+/** GET /admin/events/:slug — düzenleme formu */
+export type EventDetail = {
+  id: string;
+  slug: string;
+  title: string;
+  description: string | null;
+  coverUrl: string | null;
+  startsAt: string;
+  endsAt: string | null;
+  doorsAt: string | null;
+  priceFrom: number | null;
+  isFree: boolean;
+  ageLimit: number | null;
+  ticketUrl: string | null;
+  ticketProvider: TicketProvider | null;
+  sellerName: string | null;
+  totalPriceNote: string | null;
+  refundPolicy: string | null;
+  status: EventStatus;
+  source: DataSource;
+  fanoutAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  venue: VenueHit;
+  genres: Genre[];
+  artists: ArtistHit[];
+  saves: number;
+  refs: { source: string; externalId: string; url: string | null; syncedAt: string }[];
+  flags: string[];
+};
+
+/** POST /admin/events/check — kaydetmeden önce uyarılar */
+export type EventCheck = {
+  flags: string[];
+  duplicates: { slug: string; title: string; startsAt: string; status: EventStatus; source: DataSource }[];
+};
+
+export type District = { slug: string; name: string; venues: number };
 
 export type Moderation = { flags: string[]; held: boolean } | null;
 
