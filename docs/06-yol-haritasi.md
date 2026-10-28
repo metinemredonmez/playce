@@ -35,7 +35,7 @@
 - [ ] `radio`: Karnaval istasyonları için Triton now-playing XML (sanatçı, parça, kapak); ICY'ye düşme.
 - [ ] Güven alanları (`sellerName`, `refundPolicy`, `doorPolicy`, `dressCode`) ve alkol anahtar kelime denetimi → `REVIEW` (ADR-015).
 - [ ] `ingest:etkinlikio` (token gelince) ve Ticketmaster `countryCode=TR` deneme betiği.
-- [ ] **Yayın:** VPS'te Postgres kullanıcı/DB, `playce-api` + `playce-worker` (pm2), nginx + certbot (`api.<alan-adı>`), gece `pg_dump`, Sentry.
+- [ ] **Yayın:** ~~VPS'te Postgres kullanıcı/DB, `playce-api` + `playce-worker` (pm2), nginx, gece `pg_dump`~~ ✅ 28 Eki — geçici `http://94.138.209.152:8888` ([09](09-yayin.md)). Kalan: alan adı + certbot (HTTPS), sunucu dışı yedek, Sentry, e-posta sağlayıcısı.
 - [x] e2e: auth, takip/kaydet, fan-out, bildirim, PlayLog, arama, istasyon sağlığı, etkinlik filtreleri, AuditLog, seed, discover (70 test).
 
 ## Faz 2 — Admin paneli (Hafta 3–4)

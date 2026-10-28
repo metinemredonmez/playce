@@ -12,7 +12,7 @@ Luca'dan (lucaevent) **bağımsız** bir projedir; kendi backend'i vardır.
 - Ne / kime / neden → `00-urun.md`, rakipler ve farkımız → `01-rakip-analizi.md`
 - Öncelik (M/S/C/W) → `02-mvp-kapsam.md`
 - Backend hedef şema + API → `03-backend.md` · Admin ekranları → `04-admin.md` · Mobil ekranlar → `05-mobil.md`
-- Faz sırası → `06-yol-haritasi.md` · Kararlar → `07-kararlar.md` (yeni kararı ADR olarak ekle)
+- Faz sırası → `06-yol-haritasi.md` · Kararlar → `07-kararlar.md` (yeni kararı ADR olarak ekle) · Sunucu → `09-yayin.md`
 - Ses profili / eşleşme % / müzik hesabı bağlama → `08-zevk-eslesme.md`
 
 ## Stack
@@ -55,6 +55,11 @@ E-posta, Expo Push, radyo okuma ve Apple/Google anahtarları sahteyle değiştir
 Yeni migration (headless, `migrate dev` TTY ister):
 `npx prisma migrate diff --from-url $DATABASE_URL --to-schema-datamodel prisma/schema.prisma --script > prisma/migrations/<ts>_name/migration.sql` → `pnpm db:migrate`.
 Prisma tetikleyici ve SQL fonksiyonlarını görmez (diff'e girmez); onları migration'a elle eklenir.
+
+## Yayın
+Sunucu `ssh hazal`, kod `/var/www/playce`, pm2 `playce-api` + `playce-worker`. Güncelleme: `bash deploy/deploy.sh` (sunucuda).
+**Asla `pm2 restart all`** — aynı sunucuda başka projeler çalışıyor. Sırlar yalnız sunucudaki `apps/api/.env`'de.
+Ayrıntı ve alan adına geçiş: `docs/09-yayin.md`.
 
 ## Stil
 Türkçe açıklama/arayüz, kod İngilizce. Mevcut desenlere uy (Nest modül + DTO/class-validator; mobilde `C/S/R` tema sabitleri).

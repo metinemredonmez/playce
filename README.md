@@ -21,6 +21,7 @@ playce/
 | [00 Ürün](docs/00-urun.md) · [01 Rakip analizi](docs/01-rakip-analizi.md) · [02 MVP kapsamı](docs/02-mvp-kapsam.md) | ne, neden, kime |
 | [03 Backend](docs/03-backend.md) · [04 Admin](docs/04-admin.md) · [05 Mobil](docs/05-mobil.md) | nasıl |
 | [06 Yol haritası](docs/06-yol-haritasi.md) · [07 Kararlar](docs/07-kararlar.md) · [08 Zevk eşleşmesi](docs/08-zevk-eslesme.md) | ne zaman, neden böyle |
+| [09 Yayın](docs/09-yayin.md) | sunucu, güncelleme, yedek |
 
 ## Nasıl çalışır
 
@@ -102,6 +103,17 @@ Para kuruş cinsindendir: 450 TL = `45000`. `priceFrom: 0` girilirse etkinlik ü
 - `pnpm db:seed` — temel veri + gerçek İstanbul mekân adları ve sanatçılarla **kurgusal** etkinlikler
   (`source = DEMO`, uygulamada "DEMO" rozetiyle görünür). Tarihler seed'in çalıştığı güne göre hesaplanır;
   her çalıştırma "bu gece" listesini tazeler. `NODE_ENV=production` iken çalışmaz.
+
+## Yayın
+
+API ve worker `hazal` VPS'inde, pm2 altında (`playce-api`, `playce-worker`). Alan adı gelene kadar geçici adres
+`http://94.138.209.152:8888` (HTTPS yok; admin uçları yalnız SSH tüneliyle). Güncelleme:
+
+```bash
+ssh hazal 'cd /var/www/playce && bash deploy/deploy.sh'
+```
+
+Sunucuda başka projeler de var: **asla `pm2 restart all`**. Ayrıntı: [docs/09-yayin.md](docs/09-yayin.md).
 
 ## Bilinen sınırlar
 

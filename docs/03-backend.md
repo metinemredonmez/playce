@@ -2,7 +2,8 @@
 
 > Durum (28 Eki 2026): Faz 1 kodu büyük ölçüde bitti — kimlik, kullanıcı, takip/kaydet, bildirim, PlayLog, arama,
 > istasyon sağlığı, etkinlik filtreleri, AuditLog ve yerel türler çalışıyor; 70 e2e testi geçiyor.
-> Kalanlar (VPS'e yayın, mekân saatleri, Triton, güven alanları): [06-yol-haritasi.md](06-yol-haritasi.md) Faz 1 listesi.
+> VPS'te yayında (geçici IP adresi, HTTPS alan adını bekliyor): [09-yayin.md](09-yayin.md).
+> Kalanlar (HTTPS, mekân saatleri, Triton, güven alanları): [06-yol-haritasi.md](06-yol-haritasi.md) Faz 1 listesi.
 > Bu doküman MVP'ye (İstanbul lansmanı) kadar backend'in **hedef halini** tanımlar.
 > Kapsam ve öncelik: [02-mvp-kapsam.md](02-mvp-kapsam.md). Kararlar: [07-kararlar.md](07-kararlar.md).
 
