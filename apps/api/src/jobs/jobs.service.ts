@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { FanoutService } from '../notifications/fanout.service';
 import { PushService } from '../notifications/push.service';
 import { PlaylogService } from '../playlog/playlog.service';
+import { StationHealthService } from '../stations/station-health.service';
 import { UsersService } from '../users/users.service';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -23,6 +24,7 @@ export class JobsService {
     private readonly fanout: FanoutService,
     private readonly playlog: PlaylogService,
     private readonly users: UsersService,
+    private readonly stationHealth: StationHealthService,
   ) {}
 
   @Interval(10_000)
@@ -48,6 +50,12 @@ export class JobsService {
   @Interval(60_000)
   nowPlayingPoller() {
     return this.exclusive('now-playing-poller', () => this.playlog.poll());
+  }
+
+  /** Saatte bir; 3 ardışık hata → DOWN (uygulamada gizlenir). */
+  @Cron('7 * * * *')
+  stationHealthCheck() {
+    return this.exclusive('station-health', () => this.stationHealth.checkAll());
   }
 
   @Cron('0 3 * * *', { timeZone: 'Europe/Istanbul' })

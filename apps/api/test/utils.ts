@@ -9,7 +9,7 @@ import { MailService } from '../src/auth/mail.service';
 import { ExpoMessage, ExpoPushClient, ExpoReceipt, ExpoTicket } from '../src/notifications/expo-push.client';
 import { JobsModule } from '../src/jobs/jobs.module';
 import { PrismaService } from '../src/prisma/prisma.service';
-import { RadioService, Track } from '../src/radio/radio.service';
+import { RadioService, StreamProbe, Track } from '../src/radio/radio.service';
 
 export const ADMIN_KEY = process.env.ADMIN_KEY!;
 
@@ -41,11 +41,15 @@ export class ExpoStub {
   }
 }
 
-/** Yayın okumak yerine istasyon URL'sine göre sabit başlık döner. */
+/** Yayın okumak yerine istasyon URL'sine göre sabit başlık / sağlık sonucu döner. */
 export class RadioStub {
   tracks = new Map<string, Track>();
+  probes = new Map<string, StreamProbe>();
   async nowPlaying(url: string): Promise<Track> {
     return this.tracks.get(url) ?? { raw: null, artist: null, title: null };
+  }
+  async probe(url: string): Promise<StreamProbe> {
+    return this.probes.get(url) ?? { ok: true, codec: 'audio/mpeg', bitrate: 128, icy: true, error: null };
   }
 }
 

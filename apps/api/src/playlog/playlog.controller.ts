@@ -4,6 +4,7 @@ import { Type } from 'class-transformer';
 import { IsEnum, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min } from 'class-validator';
 import { UnmatchedStatus } from '@prisma/client';
 import { Public, Roles } from '../auth/decorators';
+import { Audit } from '../audit/audit.decorator';
 import { SLUG_PATTERN } from '../common/text';
 import { PlaylogService } from './playlog.service';
 
@@ -49,17 +50,20 @@ export class UnmatchedController {
   }
 
   @Post(':key/link')
+  @Audit('unmatched.link')
   @HttpCode(200)
   link(@Param('key') key: string, @Body() dto: LinkDto) {
     return this.playlog.link(key, dto.artistSlug);
   }
 
   @Post(':key/create')
+  @Audit('unmatched.create')
   create(@Param('key') key: string, @Body() dto: CreateFromUnmatchedDto) {
     return this.playlog.createArtist(key, dto.name, dto.slug);
   }
 
   @Post(':key/ignore')
+  @Audit('unmatched.ignore')
   @HttpCode(200)
   ignore(@Param('key') key: string) {
     return this.playlog.ignore(key);

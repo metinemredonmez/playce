@@ -11,13 +11,14 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
-    "db:seed": "ts-node prisma/seed.ts",
+    "db:seed": "ts-node prisma/seed/demo.ts",
+    "db:seed:base": "ts-node prisma/seed/base.ts",
     "dev:worker": "nest start --watch --entryFile worker",
     "start:worker": "node dist/worker.js",
     "test:e2e": "jest --config test/jest-e2e.json --runInBand"
   },
   "prisma": {
-    "seed": "ts-node prisma/seed.ts"
+    "seed": "ts-node prisma/seed/demo.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.2.8",

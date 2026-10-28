@@ -35,11 +35,14 @@ export class StationsService {
     private readonly genres: GenresService,
   ) {}
 
-  /** Türün küratörlü istasyonları + (more=true ise) radio-browser'dan ek istasyonlar. */
+  /**
+   * Türün küratörlü istasyonları + (more=true ise) radio-browser'dan ek istasyonlar.
+   * Sağlık işinin DOWN dediği istasyonlar gösterilmez; NO_METADATA olanlar çalar ama "şu an çalan" sorulmaz.
+   */
   async byGenre(slug: string, more = false): Promise<StationDto[]> {
     const genre = await this.genres.get(slug);
     const rows = await this.prisma.station.findMany({
-      where: { genreId: genre.id },
+      where: { genreId: genre.id, status: { not: 'DOWN' } },
       orderBy: [{ sort: 'asc' }, { name: 'asc' }],
     });
     const curated: StationDto[] = rows.map((s) => ({
@@ -48,7 +51,7 @@ export class StationsService {
       streamUrl: s.streamUrl,
       country: s.country,
       logoUrl: s.logoUrl,
-      hasMetadata: s.hasMetadata,
+      hasMetadata: s.hasMetadata && s.status === 'OK',
       curated: true,
     }));
     if (!more) return curated;

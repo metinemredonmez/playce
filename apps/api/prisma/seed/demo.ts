@@ -1,70 +1,15 @@
 /**
- * Playce demo verisi — yalnız geliştirme içindir.
- * - Tür + istasyon + sanatçı + mekân: slug ile upsert (idempotent).
+ * Playce demo verisi — yalnız geliştirme içindir (NODE_ENV=production'da çalışmaz).
+ * Önce temel veriyi (base.ts) yazar, sonra:
+ * - Sanatçı + mekân: slug ile upsert (idempotent).
  * - Etkinlikler: source=DEMO olanlar silinip bugüne göre yeniden üretilir,
  *   yani her `pnpm db:seed` "bu gece" listesini tazeler.
  * Etkinlikler kurgusaldır; uygulamada "DEMO" rozetiyle gösterilir.
  */
 import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
-
-const GENRES = [
-  { slug: 'turkce-pop', name: 'Türkçe Pop', color: '#FFB020', radioTag: 'turkish pop' },
-  { slug: 'deep-house', name: 'Deep House', color: '#8B5CF6', radioTag: 'deep house' },
-  { slug: 'techno', name: 'Techno & Elektronik', color: '#FF3D71', radioTag: 'techno' },
-  { slug: 'rock', name: 'Rock', color: '#FF7A1A', radioTag: 'rock' },
-  { slug: 'pop', name: 'Pop', color: '#FF6FB1', radioTag: 'pop' },
-  { slug: 'jazz', name: 'Caz', color: '#3DDC97', radioTag: 'jazz' },
-  { slug: 'lounge', name: 'Lounge & Chill', color: '#2EC4E6', radioTag: 'lounge' },
-  { slug: 'indie', name: 'Indie & Alternatif', color: '#60A5FA', radioTag: 'indie' },
-  { slug: 'hip-hop', name: 'Hip-Hop & R&B', color: '#A3E635', radioTag: 'hip hop' },
-  { slug: 'turku', name: 'Türkü & Anadolu', color: '#F43F5E', radioTag: 'türkü' },
-];
-
-const STW = (id: string) => `https://playerservices.streamtheworld.com/api/livestream-redirect/${id}.mp3`;
-
-// Hepsi HTTPS ve 2026-10-28'de test edildi. HLS (.m3u8) yayınlarda "şu an çalan" yok → hasMetadata:false.
-const STATIONS: { slug: string; name: string; genre: string; url: string; country?: string; meta?: boolean }[] = [
-  { slug: 'super-fm', name: 'Süper FM', genre: 'turkce-pop', url: STW('SUPER_FM'), country: 'TR' },
-  { slug: 'joy-turk', name: 'Joy Türk', genre: 'turkce-pop', url: STW('JOY_TURK'), country: 'TR' },
-  { slug: 'power-turk', name: 'Power Türk', genre: 'turkce-pop', url: 'https://live.powerapp.com.tr/powerturk/abr/powerturk/128/playlist.m3u8', country: 'TR', meta: false },
-  { slug: 'kral-pop', name: 'Kral Pop', genre: 'turkce-pop', url: 'https://dygedge2.radyotvonline.net/kralfm/playlist.m3u8', country: 'TR', meta: false },
-
-  { slug: 'deep-house-radio', name: 'Deep House Radio', genre: 'deep-house', url: 'https://deephouse-radio.com/api/stream/free', country: 'IE' },
-  { slug: 'ibiza-deep-house', name: 'Ibiza Deep House', genre: 'deep-house', url: 'https://stream.zeno.fm/lwv6zqgtv1dtv', country: 'CA' },
-  { slug: '0r-deep-house', name: '0R Deep House', genre: 'deep-house', url: 'https://0nlineradio.radioho.st/technolovers-deep-house?ref=radio-browser26', country: 'DE' },
-
-  { slug: 'intense-radio', name: 'Intense Radio', genre: 'techno', url: 'https://secure.live-streams.nl/main', country: 'NL' },
-  { slug: 'i-love-dance', name: 'I Love Dance', genre: 'techno', url: 'https://streams.ilovemusic.de/iloveradio2.mp3', country: 'DE' },
-  { slug: 'club-charts', name: 'Top 100 Club Charts', genre: 'techno', url: 'https://breakz-2012-high.rautemusik.fm/?ref=radiobrowser-top100-clubcharts', country: 'DE' },
-  { slug: '0r-techno', name: '0R Techno', genre: 'techno', url: 'https://0nlineradio.radioho.st/technolovers-techno?ref=radio-browser26', country: 'DE' },
-
-  { slug: 'radyo-eksen', name: 'Radyo Eksen', genre: 'rock', url: 'https://dygedge.radyotvonline.net/radyoeksen/playlist.m3u8', country: 'TR', meta: false },
-  { slug: 'classic-rock-rdmix', name: 'RdMix Classic Rock', genre: 'rock', url: 'https://cast1.torontocast.com:4610/stream', country: 'CA' },
-
-  { slug: 'metro-fm', name: 'Metro FM', genre: 'pop', url: STW('METRO_FM'), country: 'TR' },
-  { slug: 'virgin-radio', name: 'Virgin Radio', genre: 'pop', url: STW('VIRGIN_RADIO'), country: 'TR' },
-
-  { slug: 'joy-jazz', name: 'Joy Jazz', genre: 'jazz', url: STW('JOY_JAZZ'), country: 'TR' },
-  { slug: 'soma-secret-agent', name: 'SomaFM Secret Agent', genre: 'jazz', url: 'https://ice6.somafm.com/secretagent-128-mp3', country: 'US' },
-  { slug: 'bossa-jazz-brasil', name: 'Bossa Jazz Brasil', genre: 'jazz', url: 'https://centova5.transmissaodigital.com:20104/live', country: 'BR' },
-
-  { slug: 'joy-fm', name: 'Joy FM', genre: 'lounge', url: STW('JOY_FM'), country: 'TR' },
-  { slug: 'soma-groove-salad', name: 'SomaFM Groove Salad', genre: 'lounge', url: 'https://ice2.somafm.com/groovesalad-128-mp3', country: 'US' },
-  { slug: 'ibiza-chillout', name: 'Ibiza Chillout Lounge', genre: 'lounge', url: 'https://0nlineradio.radioho.st/lounge-ibiza-chillout-lounge?ref=rb26', country: 'DE' },
-
-  { slug: 'soma-indie-pop', name: 'SomaFM Indie Pop Rocks', genre: 'indie', url: 'https://ice6.somafm.com/indiepop-128-aac', country: 'US' },
-  { slug: 'kexp', name: 'KEXP', genre: 'indie', url: 'https://kexp.streamguys1.com/kexp160.aac', country: 'US' },
-  { slug: 'bytefm', name: 'ByteFM', genre: 'indie', url: 'https://bytefm.cast.addradio.de/bytefm/main/high/stream', country: 'DE' },
-
-  { slug: 'west-coast-gfunk', name: 'West Coast G-Funk', genre: 'hip-hop', url: 'https://r.bgp.rodeo/listen/west_coast/radio.mp3', country: 'US' },
-  { slug: '0r-lofi', name: '0R Lo-Fi', genre: 'hip-hop', url: 'https://0nlineradio.radioho.st/0r-lo-fi?ref=radio-browser26', country: 'DE' },
-
-  { slug: 'trt-turku', name: 'TRT Türkü', genre: 'turku', url: 'https://rd-trtturku.medya.trt.com.tr/master_128.m3u8', country: 'TR', meta: false },
-  { slug: 'radyo-7-turku', name: 'Radyo 7 Türkü', genre: 'turku', url: 'https://moondigitaledge2.radyotvonline.net/radyo7turku/playlist.m3u8', country: 'TR', meta: false },
-  { slug: 'deva-fm', name: 'Deva FM Oyun Havası', genre: 'turku', url: 'https://radyo.radyoimza.com/8034/stream', country: 'TR' },
-];
+import { slugify } from '../../src/common/text';
+import { seedBase } from './base';
+import { run } from './run';
 
 const VENUES: {
   slug: string;
@@ -76,18 +21,20 @@ const VENUES: {
   priceLevel: number;
   description: string;
 }[] = [
-  { slug: 'zorlu-psm', name: 'Zorlu PSM', district: 'Beşiktaş', genres: ['pop', 'turkce-pop', 'rock', 'jazz'], lat: 41.0668, lng: 29.0172, priceLevel: 4, description: 'Büyük prodüksiyonlu konserler ve gösteriler için çok salonlu sahne.' },
-  { slug: 'vw-arena', name: 'Volkswagen Arena', district: 'Sarıyer', genres: ['pop', 'turkce-pop', 'rock', 'hip-hop'], lat: 41.1103, lng: 29.0186, priceLevel: 3, description: 'Maslak’ta kalabalık konserlerin adresi.' },
-  { slug: 'kucukciftlik-park', name: 'KüçükÇiftlik Park', district: 'Şişli', genres: ['turkce-pop', 'pop', 'deep-house', 'hip-hop'], lat: 41.0436, lng: 28.9934, priceLevel: 3, description: 'Açık hava sahnesi; yazın festival, kışın kapalı alan.' },
-  { slug: 'salon-iksv', name: 'Salon İKSV', district: 'Beyoğlu', genres: ['indie', 'rock', 'jazz'], lat: 41.0281, lng: 28.9746, priceLevel: 2, description: 'Şişhane’de alternatif ve bağımsız müziğin evi.' },
-  { slug: 'babylon-bomonti', name: 'Babylon Bomonti', district: 'Şişli', genres: ['indie', 'rock', 'techno'], lat: 41.0589, lng: 28.9797, priceLevel: 2, description: 'Eski bira fabrikasında konser ve kulüp geceleri.' },
+  { slug: 'zorlu-psm', name: 'Zorlu PSM', district: 'Beşiktaş', genres: ['pop', 'turkce-pop', 'anadolu-rock', 'jazz'], lat: 41.0668, lng: 29.0172, priceLevel: 4, description: 'Büyük prodüksiyonlu konserler ve gösteriler için çok salonlu sahne.' },
+  { slug: 'vw-arena', name: 'Volkswagen Arena', district: 'Sarıyer', genres: ['pop', 'turkce-pop', 'anadolu-rock', 'turkce-rap'], lat: 41.1103, lng: 29.0186, priceLevel: 3, description: 'Maslak’ta kalabalık konserlerin adresi.' },
+  { slug: 'kucukciftlik-park', name: 'KüçükÇiftlik Park', district: 'Şişli', genres: ['turkce-pop', 'pop', 'deep-house', 'turkce-rap', 'anadolu-rock'], lat: 41.0436, lng: 28.9934, priceLevel: 3, description: 'Açık hava sahnesi; yazın festival, kışın kapalı alan.' },
+  { slug: 'salon-iksv', name: 'Salon İKSV', district: 'Beyoğlu', genres: ['indie', 'anadolu-rock', 'jazz'], lat: 41.0281, lng: 28.9746, priceLevel: 2, description: 'Şişhane’de alternatif ve bağımsız müziğin evi.' },
+  { slug: 'babylon-bomonti', name: 'Babylon Bomonti', district: 'Şişli', genres: ['indie', 'anadolu-rock', 'rock', 'techno'], lat: 41.0589, lng: 28.9797, priceLevel: 2, description: 'Eski bira fabrikasında konser ve kulüp geceleri.' },
   { slug: 'nardis-jazz', name: 'Nardis Jazz Club', district: 'Beyoğlu', genres: ['jazz'], lat: 41.0256, lng: 28.9739, priceLevel: 2, description: 'Galata Kulesi’nin dibinde, her gece canlı caz.' },
   { slug: 'blind', name: 'Blind', district: 'Beyoğlu', genres: ['techno', 'deep-house'], lat: 41.0316, lng: 28.9752, priceLevel: 2, description: 'Sabaha kadar elektronik; karanlık, yüksek ses.' },
-  { slug: 'arkaoda', name: 'Arkaoda', district: 'Kadıköy', genres: ['indie', 'techno', 'deep-house'], lat: 40.9878, lng: 29.0284, priceLevel: 1, description: 'Kadıköy’ün bahçeli, samimi kulübü.' },
+  { slug: 'arkaoda', name: 'Arkaoda', district: 'Kadıköy', genres: ['indie', 'techno', 'deep-house', 'hip-hop'], lat: 40.9878, lng: 29.0284, priceLevel: 1, description: 'Kadıköy’ün bahçeli, samimi kulübü.' },
   { slug: 'moda-sahnesi', name: 'Moda Sahnesi', district: 'Kadıköy', genres: ['indie', 'rock', 'jazz'], lat: 40.9846, lng: 29.0262, priceLevel: 1, description: 'Akustik ve küçük ölçekli konserler.' },
   { slug: '360-istanbul', name: '360 İstanbul', district: 'Beyoğlu', genres: ['lounge', 'deep-house'], lat: 41.0336, lng: 28.9779, priceLevel: 4, description: 'İstiklal’in tepesinde, şehir manzaralı teras.' },
   { slug: 'anjelique', name: 'Anjelique', district: 'Ortaköy', genres: ['lounge', 'deep-house', 'pop'], lat: 41.0476, lng: 29.0275, priceLevel: 4, description: 'Boğaz kenarında akşam yemeği ve gece.' },
   { slug: 'munzur-bar', name: 'Munzur Türkü Bar', district: 'Beyoğlu', genres: ['turku'], lat: 41.0345, lng: 28.9798, priceLevel: 1, description: 'Bağlama, saz ve uzun geceler.' },
+  { slug: 'harbiye-acikhava', name: 'Harbiye Cemil Topuzlu Açıkhava', district: 'Şişli', genres: ['arabesk', 'turkce-pop', 'anadolu-rock', 'fasil'], lat: 41.0455, lng: 28.9905, priceLevel: 3, description: 'Yaz konserlerinin klasik açık hava sahnesi.' },
+  { slug: 'crr', name: 'Cemal Reşit Rey Konser Salonu', district: 'Şişli', genres: ['fasil', 'jazz'], lat: 41.0463, lng: 28.9899, priceLevel: 2, description: 'Harbiye’de Türk sanat müziği ve caz konserleri.' },
 ];
 
 const ARTISTS: { name: string; genres: string[]; aliases?: string[] }[] = [
@@ -103,15 +50,15 @@ const ARTISTS: { name: string; genres: string[]; aliases?: string[] }[] = [
   { name: 'Melike Şahin', genres: ['turkce-pop', 'indie'] },
   { name: 'Sertab Erener', genres: ['turkce-pop'] },
   // rock / indie
-  { name: 'Duman', genres: ['rock'] },
-  { name: 'Mor ve Ötesi', genres: ['rock'], aliases: ['MVÖ'] },
-  { name: 'Manga', genres: ['rock'], aliases: ['maNga'] },
-  { name: 'Teoman', genres: ['rock'] },
-  { name: 'Athena', genres: ['rock'] },
+  { name: 'Duman', genres: ['anadolu-rock', 'rock'] },
+  { name: 'Mor ve Ötesi', genres: ['anadolu-rock', 'rock'], aliases: ['MVÖ'] },
+  { name: 'Manga', genres: ['anadolu-rock', 'rock'], aliases: ['maNga'] },
+  { name: 'Teoman', genres: ['anadolu-rock', 'rock'] },
+  { name: 'Athena', genres: ['anadolu-rock', 'rock'] },
   { name: 'Adamlar', genres: ['indie', 'rock'] },
   { name: 'Kalben', genres: ['indie'] },
-  { name: 'Gaye Su Akyol', genres: ['indie', 'rock'] },
-  { name: 'Altın Gün', genres: ['indie', 'turku'], aliases: ['Altin Gun'] },
+  { name: 'Gaye Su Akyol', genres: ['anadolu-rock', 'indie'] },
+  { name: 'Altın Gün', genres: ['anadolu-rock', 'indie'], aliases: ['Altin Gun'] },
   { name: 'Ty Segall', genres: ['indie', 'rock'] },
   // elektronik
   { name: 'Black Coffee', genres: ['deep-house'] },
@@ -133,14 +80,27 @@ const ARTISTS: { name: string; genres: string[]; aliases?: string[] }[] = [
   // pop
   { name: 'Lady Gaga', genres: ['pop'] },
   { name: 'Dua Lipa', genres: ['pop'] },
-  // hip-hop
-  { name: 'Ezhel', genres: ['hip-hop'] },
-  { name: 'Ceza', genres: ['hip-hop'] },
-  { name: 'Sagopa Kajmer', genres: ['hip-hop'] },
+  // Türkçe rap / hip-hop
+  { name: 'Ezhel', genres: ['turkce-rap'] },
+  { name: 'Ceza', genres: ['turkce-rap'] },
+  { name: 'Sagopa Kajmer', genres: ['turkce-rap'] },
+  { name: 'Gazapizm', genres: ['turkce-rap'] },
+  { name: 'Motive', genres: ['turkce-rap'] },
   { name: 'Daz Dillinger', genres: ['hip-hop'] },
+  // arabesk
+  { name: 'Orhan Gencebay', genres: ['arabesk'] },
+  { name: 'Müslüm Gürses', genres: ['arabesk'], aliases: ['Muslum Gurses'] },
+  { name: 'Hakan Altun', genres: ['arabesk', 'turkce-pop'] },
+  // Anadolu rock
+  { name: 'Baba Zula', genres: ['anadolu-rock'] },
+  { name: 'Barış Manço', genres: ['anadolu-rock'], aliases: ['Baris Manco'] },
+  { name: 'Cem Karaca', genres: ['anadolu-rock'] },
+  // fasıl / Türk sanat
+  { name: 'Muazzez Ersoy', genres: ['fasil'] },
+  { name: 'Zeki Müren', genres: ['fasil'] },
   // türkü
   { name: 'Erkan Oğur', genres: ['turku'] },
-  { name: 'Selda Bağcan', genres: ['turku'] },
+  { name: 'Selda Bağcan', genres: ['turku', 'anadolu-rock'] },
   { name: 'Ali Yaprak', genres: ['turku'] },
 ];
 
@@ -168,38 +128,31 @@ const EVENTS: {
   { title: 'Tefo & Seza Canlı', venue: 'kucukciftlik-park', genres: ['turkce-pop'], lineup: ['Tefo'], day: 1, time: '21:00', hours: 3, price: 700, description: 'Hit şarkılar ve sürprizlerle dolu bir gece.' },
   { title: 'Indie Akşamı', venue: 'moda-sahnesi', genres: ['indie'], lineup: ['Kalben'], day: 1, time: '20:30', hours: 2, price: 450, description: 'Kalben ile sakin, samimi bir konser.' },
   { title: 'Kadıköy Underground', venue: 'arkaoda', genres: ['techno', 'deep-house'], lineup: ['Ben Böhmer'], day: 2, time: '23:00', hours: 6, price: 500, description: 'Bahçede melodik techno, içeride deep house.' },
-  { title: 'Duman Konseri', venue: 'vw-arena', genres: ['rock'], lineup: ['Duman'], day: 2, time: '21:00', hours: 3, price: 1250, description: 'Duman’dan yeni albüm ve klasikler.' },
+  { title: 'Duman Konseri', venue: 'vw-arena', genres: ['anadolu-rock', 'rock'], lineup: ['Duman'], day: 2, time: '21:00', hours: 3, price: 1250, description: 'Duman’dan yeni albüm ve klasikler.' },
   { title: 'Lounge Dinner', venue: 'anjelique', genres: ['lounge'], lineup: ['Thievery Corporation'], day: 2, time: '20:00', hours: 5, price: 1500, description: 'Boğaz kıyısında yemek ve lounge DJ seti.' },
-  { title: 'Hip-Hop Gecesi', venue: 'vw-arena', genres: ['hip-hop'], lineup: ['Ezhel', 'Ceza'], day: 3, time: '21:00', hours: 4, price: 1000, description: 'Türkçe rap’in iki ismi aynı sahnede.' },
+  { title: 'Türkçe Rap Gecesi', venue: 'vw-arena', genres: ['turkce-rap'], lineup: ['Ezhel', 'Ceza'], day: 3, time: '21:00', hours: 4, price: 1000, description: 'Türkçe rap’in iki ismi aynı sahnede.' },
   { title: 'Mabel Matiz', venue: 'zorlu-psm', genres: ['turkce-pop'], lineup: ['Mabel Matiz'], day: 3, time: '21:00', hours: 2, price: 1400, description: 'Mabel Matiz’in yeni turnesi İstanbul’da.' },
-  { title: 'Gaye Su Akyol', venue: 'salon-iksv', genres: ['indie', 'rock'], lineup: ['Gaye Su Akyol'], day: 4, time: '21:30', hours: 2, price: 800, description: 'Anadolu psikedeliği ve fantezi rock.' },
+  { title: 'Gaye Su Akyol', venue: 'salon-iksv', genres: ['anadolu-rock', 'indie'], lineup: ['Gaye Su Akyol'], day: 4, time: '21:30', hours: 2, price: 800, description: 'Anadolu psikedeliği ve fantezi rock.' },
   { title: 'Black Coffee Open Air', venue: 'kucukciftlik-park', genres: ['deep-house'], lineup: ['Black Coffee'], day: 4, time: '22:00', hours: 6, price: 1800, description: 'Afro house’un ustası tek gecelik set.' },
-  { title: 'Mor ve Ötesi', venue: 'zorlu-psm', genres: ['rock'], lineup: ['Mor ve Ötesi'], day: 5, time: '21:00', hours: 3, price: 1100, description: 'Grubun en bilinen şarkılarıyla uzun set.' },
-  { title: 'Altın Gün Konseri', venue: 'babylon-bomonti', genres: ['indie', 'turku'], lineup: ['Altın Gün'], day: 5, time: '21:30', hours: 2, price: 900, description: 'Anadolu rock’ı yeniden yorumlayan grup.' },
+  { title: 'Mor ve Ötesi', venue: 'zorlu-psm', genres: ['anadolu-rock', 'rock'], lineup: ['Mor ve Ötesi'], day: 5, time: '21:00', hours: 3, price: 1100, description: 'Grubun en bilinen şarkılarıyla uzun set.' },
+  { title: 'Altın Gün Konseri', venue: 'babylon-bomonti', genres: ['anadolu-rock', 'indie'], lineup: ['Altın Gün'], day: 5, time: '21:30', hours: 2, price: 900, description: 'Anadolu rock’ı yeniden yorumlayan grup.' },
   { title: 'Solomun Night', venue: 'blind', genres: ['deep-house', 'techno'], lineup: ['Solomun'], day: 6, time: '23:59', hours: 6, price: 1600, description: 'Uzun set, sabaha kadar.' },
   { title: 'Sezen Aksu Şarkıları', venue: 'zorlu-psm', genres: ['turkce-pop'], lineup: ['Sezen Aksu'], day: 6, time: '20:30', hours: 3, price: 2000, description: 'Sezen Aksu’nun repertuvarından özel bir akşam.' },
   { title: 'Norah Jones', venue: 'zorlu-psm', genres: ['jazz'], lineup: ['Norah Jones'], day: 8, time: '21:00', hours: 2, price: 2200, description: 'Piyano ve sesle sakin bir akşam.' },
   { title: 'Erkan Oğur', venue: 'salon-iksv', genres: ['turku'], lineup: ['Erkan Oğur'], day: 9, time: '20:30', hours: 2, price: 700, description: 'Perdesiz gitar ve türküler.' },
   { title: 'David Guetta', venue: 'vw-arena', genres: ['techno', 'pop'], lineup: ['David Guetta', 'Hypaton'], day: 10, time: '22:00', hours: 4, price: 2500, description: 'Stadyum enerjisinde dans gecesi.' },
   { title: 'Tarkan', venue: 'vw-arena', genres: ['turkce-pop'], lineup: ['Tarkan'], day: 11, time: '21:00', hours: 3, price: 2400, description: 'Megastar’dan hit dolu bir gece.' },
-  { title: 'Teoman', venue: 'kucukciftlik-park', genres: ['rock'], lineup: ['Teoman'], day: 12, time: '21:00', hours: 2, price: 950, description: 'Teoman şarkılarıyla bir gece.' },
+  { title: 'Teoman', venue: 'kucukciftlik-park', genres: ['anadolu-rock', 'rock'], lineup: ['Teoman'], day: 12, time: '21:00', hours: 2, price: 950, description: 'Teoman şarkılarıyla bir gece.' },
   { title: 'Amelie Lens', venue: 'babylon-bomonti', genres: ['techno'], lineup: ['Amelie Lens'], day: 13, time: '23:30', hours: 6, price: 1300, description: 'Belçikalı techno yıldızı İstanbul’da.' },
   { title: 'Lady Gaga Tribute', venue: 'anjelique', genres: ['pop'], lineup: ['Lady Gaga'], day: 7, time: '22:00', hours: 4, price: 600, description: 'Lady Gaga şarkılarıyla dans gecesi (tribute).' },
   { title: 'West Coast Classics', venue: 'arkaoda', genres: ['hip-hop'], lineup: ['Daz Dillinger'], day: 7, time: '22:30', hours: 4, price: 450, description: 'G-funk ve 90’lar hip-hop klasikleri.' },
   { title: 'Dua Lipa Pop Party', venue: 'babylon-bomonti', genres: ['pop'], lineup: ['Dua Lipa'], day: 8, time: '23:00', hours: 4, price: 500, description: 'Pop parti: Dua Lipa ve dönemin hitleri.' },
+  { title: 'Gazapizm', venue: 'kucukciftlik-park', genres: ['turkce-rap'], lineup: ['Gazapizm'], day: 4, time: '21:00', hours: 3, price: 900, description: 'Yeni albüm turnesinin İstanbul durağı.' },
+  { title: 'Arabesk Gecesi', venue: 'harbiye-acikhava', genres: ['arabesk'], lineup: ['Orhan Gencebay', 'Hakan Altun'], day: 5, time: '21:00', hours: 3, price: 1100, description: 'Bağlama virtüözü ve konuğuyla arabesk klasikleri.' },
+  { title: 'Türk Sanat Müziği Konseri', venue: 'crr', genres: ['fasil'], lineup: ['Muazzez Ersoy'], day: 3, time: '20:30', hours: 2, price: 850, description: 'Saz heyeti eşliğinde şarkılar ve fasıl.' },
+  { title: 'Anadolu Psikedelik Gecesi', venue: 'babylon-bomonti', genres: ['anadolu-rock'], lineup: ['Baba Zula'], day: 2, time: '22:00', hours: 3, price: 650, description: 'Elektro bağlama, dub ve 70’ler Anadolu rock’ı.' },
   { title: 'Ty Segall', venue: 'salon-iksv', genres: ['indie', 'rock'], lineup: ['Ty Segall'], day: 10, time: '21:00', hours: 2, price: 1200, description: 'Garaj rock’ın üretken ismi.' },
 ];
-
-function slugify(s: string) {
-  const fold: Record<string, string> = { ç: 'c', ğ: 'g', ı: 'i', ö: 'o', ş: 's', ü: 'u' };
-  return s
-    .toLocaleLowerCase('tr-TR')
-    .replace(/[çğıöşü]/g, (c) => fold[c])
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '');
-}
 
 /**
  * İstanbul (UTC+3) gününe göre tarih üretir. API'deki "bu gece" mantığıyla aynı:
@@ -212,25 +165,7 @@ function trDate(dayOffset: number, time: string): Date {
   return new Date(d - 3 * 3600_000);
 }
 
-async function main() {
-  const genreId = new Map<string, string>();
-  for (const [sort, g] of GENRES.entries()) {
-    const row = await prisma.genre.upsert({ where: { slug: g.slug }, update: { ...g, sort }, create: { ...g, sort } });
-    genreId.set(g.slug, row.id);
-  }
-
-  for (const [sort, s] of STATIONS.entries()) {
-    const data = {
-      name: s.name,
-      streamUrl: s.url,
-      country: s.country ?? null,
-      hasMetadata: s.meta ?? true,
-      sort,
-      genreId: genreId.get(s.genre)!,
-    };
-    await prisma.station.upsert({ where: { slug: s.slug }, update: data, create: { slug: s.slug, ...data } });
-  }
-
+export async function seedDemo(prisma: PrismaClient, genreId: Map<string, string>) {
   const artistId = new Map<string, string>();
   for (const a of ARTISTS) {
     const slug = slugify(a.name);
@@ -265,6 +200,9 @@ async function main() {
         startsAt,
         endsAt: new Date(startsAt.getTime() + (e.hours ?? 4) * 3600_000),
         priceFrom: e.price === undefined ? null : e.price * 100,
+        isFree: e.price === 0,
+        // Kulüp geceleri 18+ (ADR-015)
+        ageLimit: e.time >= '23:00' ? 18 : null,
         source: 'DEMO',
         // Demo etkinlikler takipçilere "yeni etkinlik" bildirimi üretmesin.
         fanoutAt: new Date(),
@@ -274,20 +212,12 @@ async function main() {
       },
     });
   }
-
-  const counts = await Promise.all([
-    prisma.genre.count(),
-    prisma.station.count(),
-    prisma.artist.count(),
-    prisma.venue.count(),
-    prisma.event.count(),
-  ]);
-  console.log(`Seed tamam → tür ${counts[0]}, istasyon ${counts[1]}, sanatçı ${counts[2]}, mekân ${counts[3]}, etkinlik ${counts[4]}`);
 }
 
-main()
-  .catch((e) => {
-    console.error(e);
+if (require.main === module) {
+  if (process.env.NODE_ENV === 'production') {
+    console.error('Demo verisi üretimde yüklenmez. Temel veri için: pnpm db:seed:base');
     process.exit(1);
-  })
-  .finally(() => prisma.$disconnect());
+  }
+  run(async (prisma) => seedDemo(prisma, await seedBase(prisma)));
+}

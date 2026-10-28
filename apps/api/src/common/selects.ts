@@ -12,9 +12,11 @@ export const eventCard = {
   endsAt: true,
   priceFrom: true,
   currency: true,
+  isFree: true,
+  ageLimit: true,
   ticketUrl: true,
   source: true,
-  venue: { select: { slug: true, name: true, district: true } },
+  venue: { select: { slug: true, name: true, district: true, lat: true, lng: true } },
   genres: genreCard,
   artists: {
     orderBy: { sort: 'asc' },

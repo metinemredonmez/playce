@@ -19,7 +19,7 @@ export default function TonightScreen() {
   const [when, setWhen] = useState<When>('tonight');
   const [genre, setGenre] = useState<string | null>(null);
   const genres = useGenres();
-  const events = useEvents({ when, genre });
+  const events = useEvents({ when, genre, limit: 50 }); // sayfalama Faz 4'te
 
   return (
     <FlatList

@@ -19,6 +19,8 @@ import { VenuesModule } from './venues/venues.module';
 import { ArtistsModule } from './artists/artists.module';
 import { DiscoverModule } from './discover/discover.module';
 import { AdminModule } from './admin/admin.module';
+import { SearchModule } from './search/search.module';
+import { AuditModule } from './audit/audit.module';
 
 @Public()
 @Controller()
@@ -47,7 +49,9 @@ class HealthController {
     VenuesModule,
     ArtistsModule,
     DiscoverModule,
+    SearchModule,
     AdminModule,
+    AuditModule,
   ],
   controllers: [HealthController],
   // Sıra önemli: önce hız sınırı, sonra kimlik, sonra rol.

@@ -13,7 +13,7 @@ export class GenresService {
         name: true,
         color: true,
         radioTag: true,
-        _count: { select: { stations: true, venues: true } },
+        _count: { select: { stations: { where: { status: { not: 'DOWN' } } }, venues: true } },
       },
     });
   }

@@ -6,19 +6,12 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { RadioService, Track } from '../radio/radio.service';
 import { normalize, slugify } from '../common/text';
 import { trDateKey } from '../common/time';
+import { forEachLimit } from '../common/async';
 
 type PolledStation = { id: string; slug: string; name: string; streamUrl: string };
 
 /** Aynı anda en fazla bu kadar yayına bağlanılır (her okuma ≤ 6 sn). */
 const POLL_CONCURRENCY = 6;
-
-async function forEachLimit<T>(items: T[], limit: number, fn: (item: T) => Promise<void>) {
-  let next = 0;
-  const run = async () => {
-    while (next < items.length) await fn(items[next++]).catch(() => {});
-  };
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, run));
-}
 
 /**
  * Radyo istatistiği: küratörlü ICY yayınlarını dakikada bir okur, parça değiştiyse PlayLog'a yazar.
@@ -38,8 +31,9 @@ export class PlaylogService {
   ) {}
 
   async poll(now = new Date()) {
+    // Sağlık işi DOWN / NO_METADATA dediyse okumaya çalışma.
     const stations = await this.prisma.station.findMany({
-      where: { hasMetadata: true },
+      where: { hasMetadata: true, status: 'OK' },
       select: { id: true, slug: true, name: true, streamUrl: true },
     });
     let logged = 0;

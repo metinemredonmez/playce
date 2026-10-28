@@ -6,6 +6,7 @@ import {
   EventCard,
   EventDetail,
   Genre,
+  Page,
   qs,
   Station,
   VenueCard,
@@ -27,7 +28,8 @@ export const useStations = (genre: string | null, more = false) =>
 export const useEvents = (p: { when?: When; genre?: string | null; limit?: number }) =>
   useQuery({
     queryKey: ['events', p.when, p.genre ?? null, p.limit],
-    queryFn: () => api<EventCard[]>(`/events${qs({ when: p.when, genre: p.genre, limit: p.limit })}`),
+    // Sonsuz kaydırma Faz 4'te; şimdilik ilk sayfa.
+    queryFn: () => api<Page<EventCard>>(`/events${qs({ when: p.when, genre: p.genre, limit: p.limit })}`).then((r) => r.items),
   });
 
 export const useEvent = (slug: string) =>

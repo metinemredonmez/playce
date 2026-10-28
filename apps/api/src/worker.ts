@@ -7,7 +7,7 @@ import { validateEnv } from './config/env';
 import { JobsModule } from './jobs/jobs.module';
 import { PrismaModule } from './prisma/prisma.module';
 
-// Arka plan süreci (pm2: playce-worker): push gönderimi, fan-out, hatırlatma, radyo yoklayıcısı, gece temizliği.
+// Arka plan süreci (pm2: playce-worker): push gönderimi, fan-out, hatırlatma, radyo yoklayıcısı, istasyon sağlığı, gece temizliği.
 // HTTP dinlemez. Tek kopya çalışmalı (işler DB'yi kilitlemeden okur).
 @Module({
   imports: [ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }), ScheduleModule.forRoot(), PrismaModule, JobsModule],

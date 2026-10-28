@@ -1,10 +1,9 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
-import { ApiQuery, ApiTags } from '@nestjs/swagger';
+import { Controller, Get, Header, Param, Query, Res } from '@nestjs/common';
+import { ApiProduces, ApiTags } from '@nestjs/swagger';
+import type { Response } from 'express';
 import { EventsService } from './events.service';
-import { When } from '../common/time';
+import { EventsQuery } from './events.dto';
 import { Public } from '../auth/decorators';
-
-const WHENS: When[] = ['tonight', 'weekend', 'upcoming'];
 
 @ApiTags('events')
 @Public()
@@ -12,30 +11,24 @@ const WHENS: When[] = ['tonight', 'weekend', 'upcoming'];
 export class EventsController {
   constructor(private readonly events: EventsService) {}
 
+  /** { items, nextCursor } — sonraki sayfa için ?cursor=<nextCursor> */
   @Get()
-  @ApiQuery({ name: 'when', required: false, enum: WHENS })
-  @ApiQuery({ name: 'genre', required: false })
-  @ApiQuery({ name: 'venue', required: false })
-  @ApiQuery({ name: 'artist', required: false })
-  @ApiQuery({ name: 'limit', required: false })
-  list(
-    @Query('when') when?: string,
-    @Query('genre') genre?: string,
-    @Query('venue') venue?: string,
-    @Query('artist') artist?: string,
-    @Query('limit') limit?: string,
-  ) {
-    return this.events.list({
-      when: WHENS.includes(when as When) ? (when as When) : 'upcoming',
-      genre: genre || undefined,
-      venue: venue || undefined,
-      artist: artist || undefined,
-      limit: limit ? Number(limit) || undefined : undefined,
-    });
+  list(@Query() q: EventsQuery) {
+    return this.events.list(q);
   }
 
   @Get(':slug')
   get(@Param('slug') slug: string) {
     return this.events.get(slug);
+  }
+
+  /** Takvime ekle */
+  @Get(':slug/ics')
+  @ApiProduces('text/calendar')
+  @Header('Content-Type', 'text/calendar; charset=utf-8')
+  async ics(@Param('slug') slug: string, @Res({ passthrough: true }) res: Response) {
+    const { slug: name, body } = await this.events.ics(slug);
+    res.setHeader('Content-Disposition', `attachment; filename="${name}.ics"`);
+    return body;
   }
 }

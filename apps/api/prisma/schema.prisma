@@ -10,10 +10,36 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+/// DRAFT → REVIEW (moderasyon bekliyor) → PUBLISHED → CANCELLED. Uygulamada yalnız PUBLISHED (ve iptal bilgisi için CANCELLED) görünür.
 enum EventStatus {
   DRAFT
+  REVIEW
   PUBLISHED
   CANCELLED
+}
+
+/// Dış kaynaklar: bilet satıcısı, içe aktarma, kimlik eşleme.
+enum ExternalSource {
+  BILETIX
+  PASSO
+  BUBILET
+  BILETINIAL
+  MOBILET
+  ETKINLIKIO
+  TICKETMASTER
+  BANDSINTOWN
+  MUSICBRAINZ
+  SPOTIFY
+  APPLE_MUSIC
+  GOOGLE_PLACES
+  INSTAGRAM
+}
+
+/// Saatlik sağlık işi belirler. DOWN uygulamada görünmez; NO_METADATA çalar ama "şu an çalan" yoktur.
+enum StationStatus {
+  OK
+  DOWN
+  NO_METADATA
 }
 
 /// Verinin nereden geldiği. DEMO kayıtlar uygulamada "DEMO" rozetiyle gösterilir.
@@ -37,7 +63,19 @@ model Genre {
   venues   Venue[]
   artists  Artist[]
   /// Kullanıcının seçtiği zevk türleri
-  tasteOf  User[]    @relation("UserTaste")
+  tasteOf  User[]        @relation("UserTaste")
+  tags     TagGenreMap[]
+}
+
+/// Dış etiket → Playce türü ("afro house" → Deep House 0.7 + Techno 0.3). Last.fm, Spotify, radio-browser etiketleri için.
+model TagGenreMap {
+  /// normalize("Afro House") = "afro house"
+  tag     String
+  genreId String
+  weight  Float  @default(1)
+  genre   Genre  @relation(fields: [genreId], references: [id], onDelete: Cascade)
+
+  @@id([tag, genreId])
 }
 
 model Station {
@@ -52,6 +90,18 @@ model Station {
   hasMetadata Boolean @default(true)
   sort        Int     @default(0)
 
+  status        StationStatus @default(OK)
+  lastCheckedAt DateTime?
+  /// Ardışık başarısız kontrol; 3 olunca DOWN
+  failCount     Int           @default(0)
+  lastError     String?
+  /// "audio/mpeg", "audio/aacp", "hls"
+  codec         String?
+  bitrate       Int?
+
+  /// Arama için normalize edilmiş ad — DB tetikleyicisi doldurur, uygulama yazmaz
+  searchText String @default("")
+
   genreId String
   genre   Genre  @relation(fields: [genreId], references: [id], onDelete: Cascade)
 
@@ -61,6 +111,7 @@ model Station {
   createdAt DateTime @default(now())
 
   @@index([genreId])
+  @@index([searchText(ops: raw("gin_trgm_ops"))], type: Gin)
 }
 
 model Venue {
@@ -77,6 +128,8 @@ model Venue {
   /// 1-4 arası fiyat seviyesi (₺ … ₺₺₺₺)
   priceLevel  Int?
   source      DataSource @default(ADMIN)
+  /// ad + semt, normalize — DB tetikleyicisi doldurur
+  searchText  String     @default("")
 
   genres  Genre[]
   events  Event[]
@@ -84,16 +137,20 @@ model Venue {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([searchText(ops: raw("gin_trgm_ops"))], type: Gin)
 }
 
 model Artist {
-  id       String   @id @default(cuid())
-  slug     String   @unique
-  name     String
+  id         String   @id @default(cuid())
+  slug       String   @unique
+  name       String
   /// ICY başlığında farklı yazılışlar (ör. "Duman" / "DUMAN")
-  aliases  String[] @default([])
-  imageUrl String?
-  bio      String?
+  aliases    String[] @default([])
+  imageUrl   String?
+  bio        String?
+  /// ad + alias'lar, normalize — DB tetikleyicisi doldurur
+  searchText String   @default("")
 
   genres    Genre[]
   events    EventArtist[]
@@ -103,22 +160,33 @@ model Artist {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([searchText(ops: raw("gin_trgm_ops"))], type: Gin)
 }
 
 model Event {
-  id          String      @id @default(cuid())
-  slug        String      @unique
-  title       String
-  description String?
-  coverUrl    String?
-  startsAt    DateTime
-  endsAt      DateTime?
+  id             String          @id @default(cuid())
+  slug           String          @unique
+  title          String
+  description    String?
+  coverUrl       String?
+  startsAt       DateTime
+  endsAt         DateTime?
   /// Para = minor unit (kuruş). 450 TL = 45000.
-  priceFrom   Int?
-  currency    String      @default("TRY")
-  ticketUrl   String?
-  status      EventStatus @default(PUBLISHED)
-  source      DataSource  @default(ADMIN)
+  priceFrom      Int?
+  currency       String          @default("TRY")
+  /// Ücretsiz giriş (priceFrom = 0 girilirse kendiliğinden true)
+  isFree         Boolean         @default(false)
+  /// 18 = gece hayatı; 18 yaş altına gösterilmez (ADR-015)
+  ageLimit       Int?
+  doorsAt        DateTime?
+  ticketUrl      String?
+  /// Bilet linkinin satıcısı ("Biletix'ten al"); boşsa ticketUrl'den çıkarılır
+  ticketProvider ExternalSource?
+  status         EventStatus     @default(PUBLISHED)
+  source         DataSource      @default(ADMIN)
+  /// başlık, normalize — DB tetikleyicisi doldurur
+  searchText     String          @default("")
 
   venueId String
   venue   Venue  @relation(fields: [venueId], references: [id], onDelete: Cascade)
@@ -135,6 +203,7 @@ model Event {
 
   @@index([startsAt])
   @@index([venueId])
+  @@index([searchText(ops: raw("gin_trgm_ops"))], type: Gin)
 }
 
 /// Lineup — sort küçük olan headliner.
@@ -446,4 +515,23 @@ model UnmatchedArtist {
   artist     Artist?         @relation(fields: [artistId], references: [id], onDelete: SetNull)
 
   @@index([status, plays])
+}
+
+// ---------- Operasyon ----------
+
+/// Admin yazmalarının kaydı. actorId FK değil: kullanıcı silinse de kayıt kalır; X-Admin-Key için "admin-key".
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String
+  /// event.create, venue.update, unmatched.link …
+  action     String
+  entityType String
+  entityId   String
+  /// İstekte gönderilen alanlar (PATCH'te değişenler)
+  diff       Json?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([actorId, createdAt])
+  @@index([createdAt])
 }

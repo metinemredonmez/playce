@@ -16,7 +16,7 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
-import { EventStatus } from '@prisma/client';
+import { EventStatus, ExternalSource } from '@prisma/client';
 import { SLUG_PATTERN as SLUG } from '../common/text';
 
 export class CreateEventDto {
@@ -26,9 +26,15 @@ export class CreateEventDto {
   @ApiPropertyOptional() @IsOptional() @IsUrl() coverUrl?: string;
   @ApiProperty({ example: '2026-11-01T21:00:00+03:00' }) @IsDateString() startsAt: string;
   @ApiPropertyOptional() @IsOptional() @IsDateString() endsAt?: string;
+  @ApiPropertyOptional({ description: 'Kapı açılış saati' }) @IsOptional() @IsDateString() doorsAt?: string;
   @ApiPropertyOptional({ description: 'Kuruş cinsinden. 450 TL = 45000' }) @IsOptional() @IsInt() @Min(0) priceFrom?: number;
+  @ApiPropertyOptional({ description: 'Verilmezse priceFrom = 0 ise true' }) @IsOptional() @IsBoolean() isFree?: boolean;
+  @ApiPropertyOptional({ description: '18 = gece hayatı (ADR-015)' }) @IsOptional() @IsInt() @Min(0) @Max(25) ageLimit?: number;
   @ApiPropertyOptional() @IsOptional() @IsUrl() ticketUrl?: string;
-  @ApiPropertyOptional({ enum: EventStatus }) @IsOptional() @IsEnum(EventStatus) status?: EventStatus;
+  @ApiPropertyOptional({ enum: ExternalSource, description: 'Verilmezse ticketUrl adresinden çıkarılır' })
+  @IsOptional() @IsEnum(ExternalSource) ticketProvider?: ExternalSource;
+  @ApiPropertyOptional({ enum: EventStatus, description: 'REVIEW = moderasyon bekliyor (uygulamada görünmez)' })
+  @IsOptional() @IsEnum(EventStatus) status?: EventStatus;
   @ApiProperty() @Matches(SLUG) venueSlug: string;
   @ApiPropertyOptional({ type: [String] }) @IsOptional() @IsArray() @ArrayUnique() @Matches(SLUG, { each: true }) genreSlugs?: string[];
   @ApiPropertyOptional({ type: [String], description: 'Sıra = lineup sırası (ilk = headliner)' })

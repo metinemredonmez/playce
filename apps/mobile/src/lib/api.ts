@@ -63,17 +63,27 @@ export type EventCard = {
   endsAt: string | null;
   priceFrom: number | null;
   currency: string;
+  isFree: boolean;
+  ageLimit: number | null;
   ticketUrl: string | null;
   source: Source;
-  venue: { slug: string; name: string; district: string };
+  venue: { slug: string; name: string; district: string; lat: number | null; lng: number | null };
   genres: GenreRef[];
   artists: ArtistRef[];
+  /** Yalnız near ile istenince */
+  distanceKm?: number | null;
 };
 
 export type EventDetail = Omit<EventCard, 'venue'> & {
   description: string | null;
-  venue: EventCard['venue'] & { address: string | null; lat: number | null; lng: number | null; coverUrl: string | null };
+  status: 'PUBLISHED' | 'CANCELLED';
+  doorsAt: string | null;
+  ticketProvider: string | null;
+  venue: EventCard['venue'] & { address: string | null; coverUrl: string | null };
 };
+
+/** Cursor sayfalı liste yanıtı */
+export type Page<T> = { items: T[]; nextCursor: string | null };
 
 export type VenueCard = {
   slug: string;
@@ -124,4 +134,4 @@ export type DiscoverNow = {
   venues: VenueCard[];
 };
 
-export type When = 'tonight' | 'weekend' | 'upcoming';
+export type When = 'tonight' | 'tomorrow' | 'weekend' | 'upcoming';

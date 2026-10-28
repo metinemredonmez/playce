@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ArtistsService } from '../artists/artists.service';
 import { PlaylogService } from '../playlog/playlog.service';
 import { slugify } from '../common/text';
+import { ticketProviderFor } from '../common/tickets';
 import {
   CreateArtistDto,
   CreateEventDto,
@@ -45,6 +46,14 @@ export class AdminService {
     return v.id;
   }
 
+  /** Türetilen alanlar: ücretsiz bayrağı fiyattan, bilet satıcısı linkten (açıkça verilmedilerse). */
+  private eventDerived(dto: UpdateEventDto) {
+    return {
+      ...(dto.isFree === undefined && dto.priceFrom !== undefined ? { isFree: dto.priceFrom === 0 } : {}),
+      ...(dto.ticketProvider === undefined && dto.ticketUrl !== undefined ? { ticketProvider: ticketProviderFor(dto.ticketUrl) } : {}),
+    };
+  }
+
   private notFound(e: unknown, what: string): never {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2025') throw new NotFoundException(`${what} bulunamadı`);
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') throw new BadRequestException('Bu slug zaten kullanılıyor');
@@ -58,6 +67,7 @@ export class AdminService {
       return await this.prisma.event.create({
         data: {
           ...data,
+          ...this.eventDerived(dto),
           slug: slug ?? `${slugify(dto.title)}-${dto.startsAt.slice(0, 10)}`,
           venueId: await this.venueId(venueSlug),
           genres: { connect: await this.genreIds(genreSlugs ?? []) },
@@ -77,6 +87,7 @@ export class AdminService {
           where: { slug },
           data: {
             ...data,
+            ...this.eventDerived(dto),
             ...(venueSlug ? { venueId: await this.venueId(venueSlug) } : {}),
             ...(genreSlugs ? { genres: { set: await this.genreIds(genreSlugs) } } : {}),
           },
@@ -95,8 +106,8 @@ export class AdminService {
 
   async deleteEvent(slug: string) {
     try {
-      await this.prisma.event.delete({ where: { slug } });
-      return { ok: true };
+      const { id } = await this.prisma.event.delete({ where: { slug } });
+      return { ok: true, id };
     } catch (e) {
       this.notFound(e, 'Etkinlik');
     }
@@ -128,8 +139,8 @@ export class AdminService {
 
   async deleteVenue(slug: string) {
     try {
-      await this.prisma.venue.delete({ where: { slug } });
-      return { ok: true };
+      const { id } = await this.prisma.venue.delete({ where: { slug } });
+      return { ok: true, id };
     } catch (e) {
       this.notFound(e, 'Mekân');
     }
@@ -167,9 +178,9 @@ export class AdminService {
 
   async deleteArtist(slug: string) {
     try {
-      await this.prisma.artist.delete({ where: { slug } });
+      const { id } = await this.prisma.artist.delete({ where: { slug } });
       this.artists.invalidate();
-      return { ok: true };
+      return { ok: true, id };
     } catch (e) {
       this.notFound(e, 'Sanatçı');
     }
@@ -207,8 +218,8 @@ export class AdminService {
 
   async deleteStation(slug: string) {
     try {
-      await this.prisma.station.delete({ where: { slug } });
-      return { ok: true };
+      const { id } = await this.prisma.station.delete({ where: { slug } });
+      return { ok: true, id };
     } catch (e) {
       this.notFound(e, 'İstasyon');
     }

@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { eventCard, flattenEvent, genreCard } from '../common/selects';
 import { windowFor } from '../common/time';
 import { liveEventWhere } from '../events/events.service';
+import { districtNames } from './districts';
 
 @Injectable()
 export class VenuesService {
@@ -14,7 +15,7 @@ export class VenuesService {
     const rows = await this.prisma.venue.findMany({
       where: {
         ...(q.genre ? { genres: { some: { slug: q.genre } } } : {}),
-        ...(q.district ? { district: { equals: q.district, mode: 'insensitive' } } : {}),
+        ...(q.district ? { district: { in: await districtNames(this.prisma, q.district) } } : {}),
       },
       select: {
         slug: true,
@@ -57,8 +58,8 @@ export class VenuesService {
             slug: true,
             name: true,
             color: true,
-            // "Mekânın sesi": türün ilk küratörlü istasyonu
-            stations: { orderBy: { sort: 'asc' }, take: 1 },
+            // "Mekânın sesi": türün ilk çalışan küratörlü istasyonu
+            stations: { where: { status: { not: 'DOWN' } }, orderBy: { sort: 'asc' }, take: 1 },
           },
         },
         events: {
@@ -79,7 +80,7 @@ export class VenuesService {
         id: sound.id,
         name: sound.name,
         streamUrl: sound.streamUrl,
-        hasMetadata: sound.hasMetadata,
+        hasMetadata: sound.hasMetadata && sound.status === 'OK',
         genre: v.genres.find((g) => g.stations[0]?.id === sound.id)?.slug ?? null,
       },
     };

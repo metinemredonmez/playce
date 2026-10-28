@@ -2,6 +2,9 @@ import { Injectable } from '@nestjs/common';
 
 export type Track = { raw: string | null; artist: string | null; title: string | null };
 
+/** Yayın sağlık kontrolü sonucu. codec: "audio/mpeg", "audio/aacp", "hls"… */
+export type StreamProbe = { ok: boolean; codec: string | null; bitrate: number | null; icy: boolean; error: string | null };
+
 // Canlı yayında "şu an çalan" (ICY StreamTitle). Uygulama yayının içindeki metadata'yı
 // okuyamıyor; burada Icy-MetaData:1 ile bağlanıp ilk metadata bloğunu ayrıştırıyoruz.
 // Kısa cache + basit SSRF koruması. (Luca radyo servisinden uyarlandı.)
@@ -39,6 +42,51 @@ export class RadioService {
     this.cache.set(rawUrl, { track, at: Date.now() });
     if (this.cache.size > 500) this.cache.delete(this.cache.keys().next().value as string);
     return track;
+  }
+
+  /**
+   * Yayına bağlanıp yalnız başlıklara bakar (ses indirilmez): erişilebilir mi, ses mi, ICY başlığı veriyor mu.
+   * HLS'te çalma listesinin geçerli olduğu kontrol edilir.
+   */
+  async probe(rawUrl: string): Promise<StreamProbe> {
+    const fail = (error: string): StreamProbe => ({ ok: false, codec: null, bitrate: null, icy: false, error });
+    let url: URL;
+    try {
+      url = new URL(rawUrl);
+    } catch {
+      return fail('Geçersiz adres');
+    }
+    if (url.protocol !== 'https:') return fail('Yalnız HTTPS');
+    if (this.isBlockedHost(url.hostname)) return fail('İç ağ adresi');
+
+    try {
+      const res = await fetch(rawUrl, {
+        headers: { 'Icy-MetaData': '1', 'User-Agent': 'Playce/0.1', Accept: '*/*' },
+        redirect: 'follow',
+        signal: AbortSignal.timeout(8000),
+      });
+      const type = (res.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase();
+      if (!res.ok) {
+        await res.body?.cancel().catch(() => {});
+        return fail(`HTTP ${res.status}`);
+      }
+      if (/\.m3u8$/i.test(url.pathname) || type.includes('mpegurl')) {
+        const head = (await res.text()).trimStart().slice(0, 7);
+        return head === '#EXTM3U' ? { ok: true, codec: 'hls', bitrate: null, icy: false, error: null } : fail('Geçersiz HLS listesi');
+      }
+      await res.body?.cancel().catch(() => {});
+      if (!/^(audio\/|application\/(ogg|octet-stream))/.test(type)) return fail(`Ses değil: ${type || 'tür yok'}`);
+      const bitrate = parseInt(res.headers.get('icy-br') ?? '', 10); // "128, 128" olabilir
+      return {
+        ok: true,
+        codec: type,
+        bitrate: Number.isFinite(bitrate) ? bitrate : null,
+        icy: Number(res.headers.get('icy-metaint')) > 0,
+        error: null,
+      };
+    } catch (e) {
+      return fail((e as Error).name === 'TimeoutError' ? 'Zaman aşımı' : (e as Error).message.slice(0, 200));
+    }
   }
 
   private async readIcyTitle(url: string): Promise<string | null> {

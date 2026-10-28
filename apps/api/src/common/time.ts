@@ -10,11 +10,13 @@ function startOfTrDay(d: Date): Date {
   return new Date(local.getTime() - TR_OFFSET_MS);
 }
 
-export type When = 'tonight' | 'weekend' | 'upcoming';
+export type When = 'tonight' | 'tomorrow' | 'weekend' | 'upcoming';
+export const WHENS: When[] = ['tonight', 'tomorrow', 'weekend', 'upcoming'];
 
 /**
  * Etkinlik başlangıç penceresi.
  * - tonight: bugün (gece 06:00'ya kadar sayılır — 02:00'de "bu gece" hâlâ dünkü gecedir)
+ * - tomorrow: yarın 06:00 → ertesi gün 06:00
  * - weekend: önümüzdeki Cuma 18:00 → Pazartesi 06:00 (hafta sonundaysak şu andan itibaren)
  * - upcoming: şu andan itibaren her şey
  * Başlamış ama bitmemiş etkinlikleri kaçırmamak için alt sınırdan 6 saat geri bakılır;
@@ -30,6 +32,9 @@ export function windowFor(when: When, now = new Date()): { from: Date; to?: Date
 
   if (when === 'tonight') {
     return { from: lookBack, to: new Date(day.getTime() + DAY + 6 * HOUR) };
+  }
+  if (when === 'tomorrow') {
+    return { from: new Date(day.getTime() + DAY + 6 * HOUR), to: new Date(day.getTime() + 2 * DAY + 6 * HOUR) };
   }
 
   // weekend — 0=Pazar … 5=Cuma, 6=Cumartesi (İstanbul gününe göre)
@@ -84,4 +89,9 @@ export function quietHoursEnd(now: Date, start: number, end: number): Date | nul
   local.setUTCHours(end, 0, 0, 0);
   if (local.getTime() <= now.getTime() + TR_OFFSET_MS) local.setUTCDate(local.getUTCDate() + 1);
   return new Date(local.getTime() - TR_OFFSET_MS);
+}
+
+/** "2026-11-01" İstanbul gününün başı; saatli ISO değer olduğu gibi. */
+export function parseTrDate(s: string): Date {
+  return /^\d{4}-\d{2}-\d{2}$/.test(s) ? new Date(`${s}T00:00:00+03:00`) : new Date(s);
 }

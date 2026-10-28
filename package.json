@@ -16,6 +16,7 @@
     "db:create": "createdb playce_dev || true",
     "db:migrate": "pnpm --filter @playce/api prisma:migrate:deploy",
     "db:seed": "pnpm --filter @playce/api db:seed",
+    "db:seed:base": "pnpm --filter @playce/api db:seed:base",
     "db:studio": "pnpm --filter @playce/api prisma:studio",
     "typecheck": "pnpm -r typecheck",
     "test:api": "pnpm --filter @playce/api test:e2e"
