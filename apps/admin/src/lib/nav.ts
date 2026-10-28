@@ -28,14 +28,14 @@ export const NAV: { title: string; items: NavItem[] }[] = [
       { href: '/etkinlikler', label: 'Etkinlikler', min: 'EDITOR', soon: true, icon: 'events' },
       { href: '/mekanlar', label: 'Mekânlar', min: 'EDITOR', soon: true, icon: 'venues' },
       { href: '/sanatcilar', label: 'Sanatçılar', min: 'EDITOR', soon: true, icon: 'artists' },
-      { href: '/istasyonlar', label: 'İstasyonlar', min: 'EDITOR', badge: 'stationsDown', soon: true, icon: 'stations' },
+      { href: '/istasyonlar', label: 'İstasyonlar', min: 'EDITOR', badge: 'stationsDown', icon: 'stations' },
     ],
   },
   {
     title: 'Sistem',
     items: [
-      { href: '/ice-aktarma', label: 'İçe aktarma', min: 'ADMIN', soon: true, icon: 'import' },
-      { href: '/denetim', label: 'Denetim kaydı', min: 'ADMIN', soon: true, icon: 'audit' },
+      { href: '/ice-aktarma', label: 'İçe aktarma', min: 'ADMIN', icon: 'import' },
+      { href: '/denetim', label: 'Denetim kaydı', min: 'ADMIN', icon: 'audit' },
     ],
   },
 ];

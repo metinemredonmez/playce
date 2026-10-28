@@ -4,7 +4,8 @@
 > Uygulamanın değeri verinin kapsamına bağlı: radyoda çalan sanatçıların ne kadarı DB'de,
 > bu gecenin ne kadar etkinliği girilmiş. Panel bu iki sayıyı büyütmek için tasarlanır.
 
-> Durum (28 Eki 2026): iskelet, e-posta kodu ile giriş, rol bazlı menü, **Moderasyon** ve **Eşleşmeyenler** ekranları hazır.
+> Durum (28 Eki 2026): iskelet, e-posta kodu ile giriş, rol bazlı menü; **Moderasyon**, **Eşleşmeyenler**, **İstasyonlar**
+> (sağlık + test et), **İçe aktarma** ve **Denetim kaydı** ekranları hazır.
 > Diğer menü öğeleri "yakında" olarak görünür. Yayın alan adı + SMTP'yi bekliyor ([09](09-yayin.md)).
 
 ## 1. Teknoloji

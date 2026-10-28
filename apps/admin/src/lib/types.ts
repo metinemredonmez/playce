@@ -36,3 +36,53 @@ export type Unmatched = {
 
 export type Genre = { slug: string; name: string; color: string };
 export type ArtistHit = { slug: string; name: string; imageUrl: string | null };
+
+export type StationStatus = 'OK' | 'DOWN' | 'NO_METADATA';
+export type StationHealth = {
+  slug: string;
+  name: string;
+  streamUrl: string;
+  hasMetadata: boolean;
+  status: StationStatus;
+  failCount: number;
+  lastCheckedAt: string | null;
+  lastError: string | null;
+  codec: string | null;
+  bitrate: number | null;
+  genre: string;
+  metadataSource: 'triton' | 'icy' | null;
+  lastPlayAt: string | null;
+};
+export type StationTest = {
+  slug: string;
+  previous: StationStatus;
+  status: StationStatus;
+  probe: { ok: boolean; codec: string | null; bitrate: number | null; icy: boolean; error: string | null };
+  nowPlaying: { raw: string | null } | null;
+};
+
+export type ImportSource = 'ETKINLIKIO' | 'TICKETMASTER';
+export type ImportRun = {
+  id: string;
+  source: ImportSource;
+  dryRun: boolean;
+  startedAt: string;
+  finishedAt: string | null;
+  fetched: number;
+  created: number;
+  updated: number;
+  merged: number;
+  skipped: number;
+  errors: { externalId: string; message: string }[] | null;
+};
+
+export type AuditEntry = {
+  id: string;
+  actorId: string;
+  action: string;
+  entityType: string;
+  entityId: string;
+  diff: Record<string, unknown> | null;
+  createdAt: string;
+  actor: { id: string; email: string | null; name: string | null } | null;
+};

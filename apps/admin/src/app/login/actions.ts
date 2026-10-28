@@ -1,6 +1,6 @@
 'use server';
 
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { hasRole, type Role } from '@/lib/roles';
 import { ACCESS_COOKIE, API_URL, cookieOptions, REFRESH_COOKIE, REFRESH_MAX_AGE, type Tokens } from '@/lib/session';
@@ -8,9 +8,11 @@ import { ACCESS_COOKIE, API_URL, cookieOptions, REFRESH_COOKIE, REFRESH_MAX_AGE,
 export type LoginState = { step: 'email' | 'code'; email?: string; error?: string; info?: string };
 
 async function post<T>(path: string, body: unknown, token?: string) {
+  // Oturum listesinde ("hangi cihaz") tarayıcı görünsün, Node değil
+  const ua = (await headers()).get('user-agent');
   const res = await fetch(`${API_URL}/v1${path}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    headers: { 'Content-Type': 'application/json', ...(ua ? { 'User-Agent': ua } : {}), ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     body: JSON.stringify(body),
     cache: 'no-store',
   });

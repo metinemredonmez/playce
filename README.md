@@ -82,8 +82,9 @@ Telefonda Expo Go ile açınca uygulama API'yi Metro'yu sunan bilgisayarın IP's
 ## İçerik ekleme (admin)
 
 **Panel** (`pnpm dev:admin` → http://localhost:3031): e-posta koduyla giriş (geliştirmede kod API konsolunda),
-Editör ve üstü roller. Hazır ekranlar: **Moderasyon** (alkol denetimine takılan etkinlikler) ve **Eşleşmeyenler**
-(radyoda çalıp DB'de olmayan sanatçılar). Diğer içerik henüz `/docs` (Swagger) üzerinden. Yetki: **EDITOR+ rolünde kullanıcı** (Bearer token) ya da geçiş dönemi
+Editör ve üstü roller. Hazır ekranlar: **Moderasyon** (alkol denetimine takılan etkinlikler), **Eşleşmeyenler**
+(radyoda çalıp DB'de olmayan sanatçılar), **İstasyonlar** (sağlık, test et); Admin rolüne ayrıca **İçe aktarma** ve
+**Denetim kaydı**. Etkinlik/mekân/sanatçı girişi henüz `/docs` (Swagger) üzerinden. Yetki: **EDITOR+ rolünde kullanıcı** (Bearer token) ya da geçiş dönemi
 için `X-Admin-Key`. Rol vermek için şimdilik: `UPDATE "User" SET role='ADMIN' WHERE email='…';`
 
 | Uç | Ne yapar |

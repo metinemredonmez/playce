@@ -46,7 +46,8 @@
 - [ ] Mekân liste + form (Google Places'ten doldur, harita pini, saatler, ses profili, galeri).
 - [ ] Sanatçı liste + form (MusicBrainz'den bul, alias, birleştir, radyo geçmişi).
 - [x] **Eşleşmeyenler** kuyruğu: oluştur (türler istasyondan önerilir) / bağla (yazım hatası toleranslı arama) / yoksay / geri al; çaldığı istasyonlar.
-- [ ] İstasyonlar (sağlık, test et, radio-browser'dan ekle, sıralama), Türler.
+- [ ] İstasyonlar: ~~sağlık listesi, test et, metadata kaynağı~~ ✅; radio-browser'dan ekle, sıralama, Türler kaldı.
+- [x] İçe aktarma (kaynak durumu, deneme / şimdi çalıştır, son turlar) ve Denetim kaydı (tür süzgeci, gönderilen alanlar, sayfalama) — ADMIN.
 - [ ] Öne çıkanlar (takvim görünümü, sponsorlu anahtarı), Başvurular, Kullanıcılar (KVKK silme), Kampanyalar, Denetim kaydı.
 - [ ] Yayın: `admin.<alan-adı>`, pm2 `playce-admin` — alan adı (HTTPS) ve SMTP (giriş kodu) bekleniyor.
 
