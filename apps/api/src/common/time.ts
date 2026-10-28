@@ -44,3 +44,44 @@ export function windowFor(when: When, now = new Date()): { from: Date; to?: Date
 /** Bitiş saati girilmemiş etkinlik için varsayılan süre. */
 export const DEFAULT_EVENT_HOURS = 5;
 export const HOUR_MS = HOUR;
+
+/** İstanbul saatiyle 0–23. */
+export function trHour(d: Date): number {
+  return (d.getUTCHours() + 3) % 24;
+}
+
+/** İstanbul takvim günü "YYYY-MM-DD" (günlük sınırlar için). */
+export function trDateKey(d: Date): string {
+  return new Date(d.getTime() + TR_OFFSET_MS).toISOString().slice(0, 10);
+}
+
+const MONTHS = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+const DAYS = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+
+/** Bildirim metinleri için: "1 Kasım Cumartesi 21:00" */
+export function trDateTimeLabel(d: Date): string {
+  const l = new Date(d.getTime() + TR_OFFSET_MS);
+  const hh = String(l.getUTCHours()).padStart(2, '0');
+  const mm = String(l.getUTCMinutes()).padStart(2, '0');
+  return `${l.getUTCDate()} ${MONTHS[l.getUTCMonth()]} ${DAYS[l.getUTCDay()]} ${hh}:${mm}`;
+}
+
+/** "21:00" */
+export function trTimeLabel(d: Date): string {
+  return trDateTimeLabel(d).slice(-5);
+}
+
+/**
+ * Sessiz saatlerdeysek sessizliğin bittiği an, değilse null.
+ * Aralık İstanbul saatiyle [start, end); gece yarısını aşabilir (23 → 8). start = end → sessiz saat yok.
+ */
+export function quietHoursEnd(now: Date, start: number, end: number): Date | null {
+  if (start === end) return null;
+  const h = trHour(now);
+  const quiet = start < end ? h >= start && h < end : h >= start || h < end;
+  if (!quiet) return null;
+  const local = new Date(now.getTime() + TR_OFFSET_MS);
+  local.setUTCHours(end, 0, 0, 0);
+  if (local.getTime() <= now.getTime() + TR_OFFSET_MS) local.setUTCDate(local.getUTCDate() + 1);
+  return new Date(local.getTime() - TR_OFFSET_MS);
+}

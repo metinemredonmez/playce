@@ -10,13 +10,15 @@
   },
   "scripts": {
     "dev:api": "pnpm --filter @playce/api dev",
+    "dev:worker": "pnpm --filter @playce/api dev:worker",
     "dev:mobile": "pnpm --filter @playce/mobile start",
     "ios": "pnpm --filter @playce/mobile ios",
     "db:create": "createdb playce_dev || true",
     "db:migrate": "pnpm --filter @playce/api prisma:migrate:deploy",
     "db:seed": "pnpm --filter @playce/api db:seed",
     "db:studio": "pnpm --filter @playce/api prisma:studio",
-    "typecheck": "pnpm -r typecheck"
+    "typecheck": "pnpm -r typecheck",
+    "test:api": "pnpm --filter @playce/api test:e2e"
   },
   "pnpm": {
     "overrides": {

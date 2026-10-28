@@ -17,8 +17,7 @@ import {
   Min,
 } from 'class-validator';
 import { EventStatus } from '@prisma/client';
-
-const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+import { SLUG_PATTERN as SLUG } from '../common/text';
 
 export class CreateEventDto {
   @ApiProperty() @IsString() @MaxLength(140) title: string;

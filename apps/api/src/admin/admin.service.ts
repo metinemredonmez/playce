@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ArtistsService } from '../artists/artists.service';
+import { PlaylogService } from '../playlog/playlog.service';
 import { slugify } from '../common/text';
 import {
   CreateArtistDto,
@@ -19,6 +20,7 @@ export class AdminService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly artists: ArtistsService,
+    private readonly playlog: PlaylogService,
   ) {}
 
   // ---- yardımcılar ----
@@ -141,6 +143,7 @@ export class AdminService {
         data: { ...data, slug: slug ?? slugify(dto.name), genres: { connect: await this.genreIds(genreSlugs ?? []) } },
       });
       this.artists.invalidate();
+      await this.playlog.autoLink(a.id);
       return a;
     } catch (e) {
       this.notFound(e, 'Sanatçı');
@@ -155,6 +158,7 @@ export class AdminService {
         data: { ...data, ...(genreSlugs ? { genres: { set: await this.genreIds(genreSlugs) } } : {}) },
       });
       this.artists.invalidate();
+      await this.playlog.autoLink(a.id);
       return a;
     } catch (e) {
       this.notFound(e, 'Sanatçı');

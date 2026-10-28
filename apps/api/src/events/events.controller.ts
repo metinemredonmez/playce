@@ -2,10 +2,12 @@ import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ApiQuery, ApiTags } from '@nestjs/swagger';
 import { EventsService } from './events.service';
 import { When } from '../common/time';
+import { Public } from '../auth/decorators';
 
 const WHENS: When[] = ['tonight', 'weekend', 'upcoming'];
 
 @ApiTags('events')
+@Public()
 @Controller('events')
 export class EventsController {
   constructor(private readonly events: EventsService) {}

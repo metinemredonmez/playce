@@ -266,6 +266,8 @@ async function main() {
         endsAt: new Date(startsAt.getTime() + (e.hours ?? 4) * 3600_000),
         priceFrom: e.price === undefined ? null : e.price * 100,
         source: 'DEMO',
+        // Demo etkinlikler takipçilere "yeni etkinlik" bildirimi üretmesin.
+        fanoutAt: new Date(),
         venueId: venueId.get(e.venue)!,
         genres: { connect: e.genres.map((g) => ({ id: genreId.get(g)! })) },
         artists: { create: e.lineup.map((name, sort) => ({ artistId: artistId.get(name)!, sort })) },

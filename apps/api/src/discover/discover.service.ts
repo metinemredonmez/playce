@@ -33,6 +33,7 @@ export class DiscoverService {
       genreWindow = 'upcoming';
     }
 
-    return { track, artist, artistEvents, genreEvents, genreWindow, venues: venues.slice(0, 8) };
+    const artistRef = artist && { slug: artist.slug, name: artist.name, imageUrl: artist.imageUrl };
+    return { track, artist: artistRef, artistEvents, genreEvents, genreWindow, venues: venues.slice(0, 8) };
   }
 }

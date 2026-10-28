@@ -1,6 +1,6 @@
-import { Body, Controller, Delete, Param, Patch, Post, UseGuards } from '@nestjs/common';
-import { ApiSecurity, ApiTags } from '@nestjs/swagger';
-import { AdminKeyGuard } from '../common/admin-key.guard';
+import { Body, Controller, Delete, Param, Patch, Post } from '@nestjs/common';
+import { ApiBearerAuth, ApiSecurity, ApiTags } from '@nestjs/swagger';
+import { Roles } from '../auth/decorators';
 import { AdminService } from './admin.service';
 import {
   CreateArtistDto,
@@ -14,9 +14,11 @@ import {
 } from './admin.dto';
 
 // İçerik yönetimi. Panel gelene kadar Swagger (/docs) üzerinden kullanılır.
+// EDITOR+ rolü (JWT) ya da geçiş dönemi için X-Admin-Key.
 @ApiTags('admin')
+@ApiBearerAuth()
 @ApiSecurity('admin-key')
-@UseGuards(AdminKeyGuard)
+@Roles('EDITOR')
 @Controller('admin')
 export class AdminController {
   constructor(private readonly admin: AdminService) {}

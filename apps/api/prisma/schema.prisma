@@ -36,6 +36,8 @@ model Genre {
   events   Event[]
   venues   Venue[]
   artists  Artist[]
+  /// Kullanıcının seçtiği zevk türleri
+  tasteOf  User[]    @relation("UserTaste")
 }
 
 model Station {
@@ -52,6 +54,9 @@ model Station {
 
   genreId String
   genre   Genre  @relation(fields: [genreId], references: [id], onDelete: Cascade)
+
+  plays     PlayLog[]
+  favoredBy FavoriteStation[]
 
   createdAt DateTime @default(now())
 
@@ -73,8 +78,9 @@ model Venue {
   priceLevel  Int?
   source      DataSource @default(ADMIN)
 
-  genres Genre[]
-  events Event[]
+  genres  Genre[]
+  events  Event[]
+  follows VenueFollow[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -89,8 +95,11 @@ model Artist {
   imageUrl String?
   bio      String?
 
-  genres Genre[]
-  events EventArtist[]
+  genres    Genre[]
+  events    EventArtist[]
+  follows   ArtistFollow[]
+  plays     PlayLog[]
+  unmatched UnmatchedArtist[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -116,6 +125,10 @@ model Event {
 
   genres  Genre[]
   artists EventArtist[]
+  saves   SavedEvent[]
+
+  /// Takipçilere "yeni etkinlik" bildirimi üretildiği an. Null + PUBLISHED = worker gönderecek.
+  fanoutAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -135,4 +148,302 @@ model EventArtist {
 
   @@id([eventId, artistId])
   @@index([artistId])
+}
+
+// ---------- Kullanıcı & kimlik ----------
+
+enum Role {
+  USER
+  EDITOR
+  MODERATOR
+  ADMIN
+  SUPERADMIN
+}
+
+enum AuthProvider {
+  EMAIL
+  APPLE
+  GOOGLE
+}
+
+enum ConsentKind {
+  KVKK_AYDINLATMA
+  ACIK_RIZA_PAZARLAMA
+  ANALYTICS
+  LOCATION
+  MUSIC_PROFILE
+}
+
+model User {
+  id        String    @id @default(cuid())
+  email     String?   @unique
+  name      String?
+  avatarUrl String?
+  role      Role      @default(USER)
+  city      String    @default("istanbul")
+  locale    String    @default("tr")
+  /// 18+ içerik için yalnız yıl (veri minimizasyonu)
+  birthYear Int?
+  bannedAt  DateTime?
+  /// KVKK silme talebi. 30 gün içinde giriş yaparsa hesap geri gelir; sonra anonimleştirilir.
+  deletedAt DateTime?
+  /// Anonimleştirme yapıldı (kişisel alanlar silindi)
+  purgedAt  DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  identities       AuthIdentity[]
+  sessions         Session[]
+  consents         Consent[]
+  tasteGenres      Genre[]           @relation("UserTaste")
+  artistFollows    ArtistFollow[]
+  venueFollows     VenueFollow[]
+  saves            SavedEvent[]
+  favStations      FavoriteStation[]
+  pushTokens       PushToken[]
+  notifications    Notification[]
+  notificationPref NotificationPref?
+}
+
+model AuthIdentity {
+  id        String       @id @default(cuid())
+  userId    String
+  provider  AuthProvider
+  /// Apple sub / Google sub / e-posta
+  subject   String
+  createdAt DateTime     @default(now())
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, subject])
+  @@index([userId])
+}
+
+/// Bir cihazdaki oturum. Refresh token her kullanımda döner; düz token saklanmaz.
+model Session {
+  id          String    @id @default(cuid())
+  userId      String
+  /// sha256(geçerli refresh token)
+  refreshHash String    @unique
+  /// sha256(bir önceki refresh token) — yeniden kullanılırsa token çalınmış sayılır
+  prevHash    String?   @unique
+  userAgent   String?
+  expiresAt   DateTime
+  rotatedAt   DateTime?
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model OtpCode {
+  id         String    @id @default(cuid())
+  email      String
+  /// HMAC(e-posta:kod) — düz kod saklanmaz
+  codeHash   String
+  attempts   Int       @default(0)
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([email, createdAt])
+}
+
+/// Her onay değişikliği yeni satır (ispat için). Geçerli durum = türün en son satırı.
+model Consent {
+  id        String      @id @default(cuid())
+  userId    String
+  kind      ConsentKind
+  /// Metin sürümü, ör. "2026-11-01"
+  version   String
+  granted   Boolean
+  createdAt DateTime    @default(now())
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, kind, createdAt])
+}
+
+// ---------- Sosyal ----------
+
+enum SaveStatus {
+  INTERESTED
+  GOING
+}
+
+model ArtistFollow {
+  userId        String
+  artistId      String
+  /// "Radyoda çaldığında haber ver"
+  notifyOnRadio Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  artist        Artist   @relation(fields: [artistId], references: [id], onDelete: Cascade)
+
+  @@id([userId, artistId])
+  @@index([artistId])
+}
+
+model VenueFollow {
+  userId    String
+  venueId   String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  venue     Venue    @relation(fields: [venueId], references: [id], onDelete: Cascade)
+
+  @@id([userId, venueId])
+  @@index([venueId])
+}
+
+model SavedEvent {
+  userId     String
+  eventId    String
+  status     SaveStatus @default(INTERESTED)
+  remindedAt DateTime?
+  createdAt  DateTime   @default(now())
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event      Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@id([userId, eventId])
+  @@index([eventId])
+}
+
+/// radio-browser istasyonları DB'de olmayabilir → URL + ad da saklanır.
+model FavoriteStation {
+  id          String   @id @default(cuid())
+  userId      String
+  stationId   String?
+  streamUrl   String
+  name        String
+  genreSlug   String?
+  logoUrl     String?
+  hasMetadata Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  station     Station? @relation(fields: [stationId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, streamUrl])
+}
+
+// ---------- Bildirim ----------
+
+enum NotificationKind {
+  ARTIST_NEW_EVENT
+  ARTIST_ON_RADIO
+  EVENT_REMINDER
+  VENUE_NEW_EVENT
+  WEEKLY_DIGEST
+  CAMPAIGN
+  SYSTEM
+}
+
+/// Push gönderimi bildirim satırının kendisinden yürür (DB outbox, ADR-020).
+enum PushState {
+  PENDING
+  SENT
+  SKIPPED
+  FAILED
+}
+
+model PushToken {
+  id         String   @id @default(cuid())
+  /// Girişsiz cihazlar da kayıt olabilir (kampanya için)
+  userId     String?
+  deviceId   String
+  /// ExponentPushToken[…]
+  token      String   @unique
+  platform   String
+  lastSeenAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  kind      NotificationKind
+  title     String
+  body      String
+  /// playce://event/slug
+  deeplink  String?
+  data      Json?
+  /// Aynı bildirimi iki kez üretmemek için: "event:<eventId>:<userId>", "radio:<userId>:<gün>"
+  dedupeKey String?          @unique
+  readAt    DateTime?
+  pushState PushState        @default(PENDING)
+  /// Sessiz saatlerde ertelenir
+  pushAfter DateTime         @default(now())
+  pushedAt  DateTime?
+  createdAt DateTime         @default(now())
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([pushState, pushAfter])
+}
+
+model NotificationPref {
+  userId         String  @id
+  artistNewEvent Boolean @default(true)
+  venueNewEvent  Boolean @default(true)
+  artistOnRadio  Boolean @default(true)
+  eventReminder  Boolean @default(true)
+  weeklyDigest   Boolean @default(true)
+  /// Açık rıza (ACIK_RIZA_PAZARLAMA) olmadan açılamaz
+  marketing      Boolean @default(false)
+  /// İstanbul saatiyle; bu aralıkta push gönderilmez (başlangıç = bitiş → kapalı)
+  quietStart     Int     @default(1)
+  quietEnd       Int     @default(10)
+  user           User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+/// Expo gönderim makbuzu; 15 dk sonra kontrol edilir (DeviceNotRegistered → token silinir).
+model PushTicket {
+  id             String   @id
+  token          String
+  notificationId String?
+  createdAt      DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+// ---------- Radyo istatistiği ----------
+
+model PlayLog {
+  id        BigInt   @id @default(autoincrement())
+  stationId String
+  raw       String
+  artistRaw String?
+  /// normalize(artistRaw) — eşleşmeyenler kuyruğundan bağlanınca geriye dönük doldurmak için
+  artistKey String?
+  title     String?
+  artistId  String?
+  at        DateTime @default(now())
+  station   Station  @relation(fields: [stationId], references: [id], onDelete: Cascade)
+  artist    Artist?  @relation(fields: [artistId], references: [id], onDelete: SetNull)
+
+  @@index([artistId, at])
+  @@index([stationId, at])
+  @@index([artistKey])
+}
+
+enum UnmatchedStatus {
+  OPEN
+  IGNORED
+  LINKED
+}
+
+/// Radyoda çalan ama DB'de olmayan sanatçılar — admin "Eşleşmeyenler" kuyruğu.
+model UnmatchedArtist {
+  /// normalize("Oğuzhan Koç") = "oguzhan koc"
+  key        String          @id
+  display    String
+  plays      Int             @default(1)
+  sampleRaw  String
+  lastSeenAt DateTime        @default(now())
+  status     UnmatchedStatus @default(OPEN)
+  artistId   String?
+  artist     Artist?         @relation(fields: [artistId], references: [id], onDelete: SetNull)
+
+  @@index([status, plays])
 }

@@ -1,8 +1,10 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { ApiQuery, ApiTags } from '@nestjs/swagger';
 import { DiscoverService } from './discover.service';
+import { Public } from '../auth/decorators';
 
 @ApiTags('discover')
+@Public()
 @Controller('discover')
 export class DiscoverController {
   constructor(private readonly discover: DiscoverService) {}

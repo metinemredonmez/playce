@@ -9,6 +9,8 @@ function resolveApiUrl() {
 }
 
 export const API_URL = resolveApiUrl();
+/** Tüm uçlar sürümlü (/v1). */
+const BASE = `${API_URL}/v1`;
 
 export class ApiError extends Error {
   constructor(
@@ -20,7 +22,7 @@ export class ApiError extends Error {
 }
 
 export async function api<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, { headers: { Accept: 'application/json' } });
+  const res = await fetch(`${BASE}${path}`, { headers: { Accept: 'application/json' } });
   if (!res.ok) {
     const body = await res.json().catch(() => null);
     throw new ApiError(res.status, body?.message ?? `İstek başarısız (${res.status})`);

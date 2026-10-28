@@ -12,15 +12,29 @@ export type EventQuery = {
   limit?: number;
 };
 
-/** Yayında ve henüz bitmemiş etkinlik koşulu. */
-export function liveEventWhere(now = new Date()): Prisma.EventWhereInput {
+/** Henüz bitmemiş etkinlik koşulu (bitiş saati yoksa varsayılan süre). */
+export function notEndedWhere(now = new Date()): Prisma.EventWhereInput {
   return {
-    status: 'PUBLISHED',
     OR: [
       { endsAt: { gte: now } },
       { endsAt: null, startsAt: { gte: new Date(now.getTime() - DEFAULT_EVENT_HOURS * HOUR_MS) } },
     ],
   };
+}
+
+/** notEndedWhere'in tersi. NOT kullanılmaz: SQL'de NULL karşılaştırması satırı düşürür. */
+export function endedWhere(now = new Date()): Prisma.EventWhereInput {
+  return {
+    OR: [
+      { endsAt: { lt: now } },
+      { endsAt: null, startsAt: { lt: new Date(now.getTime() - DEFAULT_EVENT_HOURS * HOUR_MS) } },
+    ],
+  };
+}
+
+/** Yayında ve henüz bitmemiş etkinlik koşulu. */
+export function liveEventWhere(now = new Date()): Prisma.EventWhereInput {
+  return { status: 'PUBLISHED', ...notEndedWhere(now) };
 }
 
 @Injectable()

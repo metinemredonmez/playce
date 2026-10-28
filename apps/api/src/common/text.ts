@@ -15,3 +15,6 @@ export function normalize(s: string): string {
 export function slugify(s: string): string {
   return normalize(s).replace(/\s+/g, '-');
 }
+
+/** URL'de kullanılan slug biçimi: "kuzu-kuzu", "babylon-bomonti" */
+export const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;

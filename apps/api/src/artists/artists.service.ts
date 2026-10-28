@@ -4,7 +4,10 @@ import { eventCard, flattenEvent, genreCard } from '../common/selects';
 import { normalize } from '../common/text';
 import { liveEventWhere } from '../events/events.service';
 
-type IndexedArtist = { slug: string; name: string; imageUrl: string | null; keys: string[] };
+type IndexedArtist = { id: string; slug: string; name: string; imageUrl: string | null; keys: string[] };
+export type MatchedArtist = Omit<IndexedArtist, 'keys'>;
+
+const RADIO_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000;
 
 // ICY'deki sanatçı alanında birden çok isim olabilir: "Hypaton, David Guetta", "Tarkan & Sezen Aksu", "X feat. Y".
 const ARTIST_SPLIT = /\s*(?:,|&|\+|\/|;|\bfeat\.?|\bft\.?|\bfeaturing\b|\bvs\.?|\bx\b|\bile\b|\bve\b)\s*/i;
@@ -31,10 +34,18 @@ export class ArtistsService {
           take: 20,
           select: { event: { select: eventCard } },
         },
+        // Son 7 günde hangi istasyonda çaldı (PlayLog)
+        plays: {
+          where: { at: { gte: new Date(Date.now() - RADIO_LOOKBACK_MS) } },
+          orderBy: { at: 'desc' },
+          take: 5,
+          select: { at: true, title: true, station: { select: { slug: true, name: true, streamUrl: true, hasMetadata: true } } },
+        },
       },
     });
     if (!a) throw new NotFoundException('Sanatçı bulunamadı');
-    return { ...a, events: a.events.map((e) => flattenEvent(e.event)) };
+    const { plays, ...rest } = a;
+    return { ...rest, events: a.events.map((e) => flattenEvent(e.event)), onRadio: plays };
   }
 
   /** Admin değişikliğinden sonra eşleştirme indeksini tazele. */
@@ -47,7 +58,7 @@ export class ArtistsService {
    * 1) Sanatçı alanını parçalara böl, her parçayı ad/alias ile birebir karşılaştır.
    * 2) Bulunamazsa tüm başlıkta (≥4 harfli) sanatçı adını kelime sınırıyla ara.
    */
-  async match(artistField: string | null, raw: string | null): Promise<Omit<IndexedArtist, 'keys'> | null> {
+  async match(artistField: string | null, raw: string | null): Promise<MatchedArtist | null> {
     if (!artistField && !raw) return null;
     const artists = await this.loadIndex();
 
@@ -66,8 +77,9 @@ export class ArtistsService {
 
   private async loadIndex(): Promise<IndexedArtist[]> {
     if (this.index && Date.now() - this.index.at < this.TTL) return this.index.artists;
-    const rows = await this.prisma.artist.findMany({ select: { slug: true, name: true, imageUrl: true, aliases: true } });
+    const rows = await this.prisma.artist.findMany({ select: { id: true, slug: true, name: true, imageUrl: true, aliases: true } });
     const artists = rows.map((r) => ({
+      id: r.id,
       slug: r.slug,
       name: r.name,
       imageUrl: r.imageUrl,

@@ -1,8 +1,10 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { RadioService } from './radio.service';
+import { Public } from '../auth/decorators';
 
 @ApiTags('radio')
+@Public()
 @Controller('radio')
 export class RadioController {
   constructor(private readonly radio: RadioService) {}
