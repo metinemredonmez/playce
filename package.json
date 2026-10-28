@@ -17,5 +17,12 @@
     "db:seed": "pnpm --filter @playce/api db:seed",
     "db:studio": "pnpm --filter @playce/api prisma:studio",
     "typecheck": "pnpm -r typecheck"
+  },
+  "pnpm": {
+    "overrides": {
+      "multer": "^2.5.0",
+      "qs": "^6.17.0",
+      "js-yaml@5": "^5.4.1"
+    }
   }
 }
