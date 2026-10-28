@@ -517,6 +517,8 @@ model PlayLog {
   @@index([artistId, at])
   @@index([stationId, at])
   @@index([artistKey])
+  /// /health/deep son kayıt, gece temizliği 90 gün
+  @@index([at])
 }
 
 enum UnmatchedStatus {
@@ -541,6 +543,39 @@ model UnmatchedArtist {
 }
 
 // ---------- Operasyon ----------
+
+/// Kaydın dış kaynaktaki karşılığı: içe aktarmada aynı etkinlik/mekân ikinci kez açılmaz.
+model ExternalRef {
+  id         String         @id @default(cuid())
+  /// event | venue | artist
+  entityType String
+  entityId   String
+  source     ExternalSource
+  externalId String
+  url        String?
+  syncedAt   DateTime       @default(now())
+
+  @@unique([source, entityType, externalId])
+  @@index([entityType, entityId])
+}
+
+/// İçe aktarma turu (gece işi ya da admin). Sayılar ve ilk hatalar admin'de görünür.
+model ImportRun {
+  id         String         @id @default(cuid())
+  source     ExternalSource
+  dryRun     Boolean        @default(false)
+  startedAt  DateTime       @default(now())
+  finishedAt DateTime?
+  fetched    Int            @default(0)
+  created    Int            @default(0)
+  updated    Int            @default(0)
+  /// Aynı etkinlik zaten vardı (başka kaynak/admin) → yalnız ExternalRef eklendi
+  merged     Int            @default(0)
+  skipped    Int            @default(0)
+  errors     Json?
+
+  @@index([source, startedAt])
+}
 
 /// Admin yazmalarının kaydı. actorId FK değil: kullanıcı silinse de kayıt kalır; X-Admin-Key için "admin-key".
 model AuditLog {

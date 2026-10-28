@@ -60,10 +60,10 @@
 | `notifications` | Push token, bildirim kutusu, tercih, Expo gönderici, fan-out, hatırlatma | ✅ (kampanya Faz 2) |
 | `submissions` | Organizatör/mekân başvurusu, moderasyon | yeni |
 | `media` | Görsel yükleme (presigned URL), boyutlandırma | yeni |
-| `ingest` | Dış kaynaklardan etkinlik/sanatçı içe aktarma, tekilleştirme | yeni |
+| `ingest` | Etkinlik.io + Ticketmaster etkinlik içe aktarma, tekilleştirme, mekân eşleme, `ExternalRef`/`ImportRun` | ✅ (anahtarlar bekleniyor) |
 | `admin` | Rol tabanlı admin uçları, dashboard metrikleri | JWT+rol ✅ (key geçiş dönemi), dashboard Faz 2 |
 | `audit` | Admin değişiklik kaydı (`@Audit()` + global interceptor) | ✅ |
-| `health` | `/health`, `/health/deep` (DB, push kuyruğu gecikmesi) | var → genişlet |
+| `health` | `/health`, `/health/deep` (DB, push kuyruğu gecikmesi, son PlayLog, son sağlık kontrolü → sorun varsa 503) | ✅ |
 
 ## 3. Veri modeli (hedef)
 
@@ -455,7 +455,7 @@ Liste uçları **cursor** sayfalama: `?cursor=<id>&limit=20` → `{ items, nextC
 | Kampanya | CRUD `campaigns`, `POST campaigns/:id/{test,send}`, `GET campaigns/:id/stats` | ADMIN |
 | Kullanıcı | `GET users?q`, `GET users/:id`, `POST users/:id/{ban,unban,delete}`, rol atama | ADMIN (rol: SUPERADMIN) |
 | Medya | `POST uploads/presign {kind, contentType}` → `{url, fields, publicUrl}` | EDITOR+ |
-| İçe aktarma | `POST imports/:source/run`, `GET imports` | ADMIN |
+| İçe aktarma | `POST imports/:source/run?dryRun` ✅, `GET imports` ✅ | ADMIN |
 | Denetim | `GET audit?entityType&entityId&actor&cursor` ✅ | ADMIN |
 
 ## 5. Arka plan işleri (`playce-worker`, `src/jobs/jobs.service.ts`)
@@ -470,7 +470,7 @@ Liste uçları **cursor** sayfalama: `?cursor=<id>&limit=20` → `{ items, nextC
 | `push-dispatch` | 10 sn | `PENDING` ve `pushAfter ≤ şimdi` bildirimleri Expo'ya (100'lük paketler); cihaz yoksa `SKIPPED`, 6 saatte gidemeyen `FAILED` |
 | `campaign-send` | zamanlanınca | Segmenti çöz → bildirim satırları üret (gönderimi `push-dispatch` yapar) — Faz 2 |
 | `push-receipts` | 15 dk | Expo makbuzları; `DeviceNotRegistered` → token sil |
-| `ingest:<kaynak>` | gece 04:00 | Dış kaynaklardan etkinlik içe aktar, tekilleştir (§7) |
+| `ingest` | gece 04:00 | Anahtarı tanımlı kaynaklardan (Etkinlik.io, Ticketmaster) İstanbul müzik etkinliklerini içe aktar, tekilleştir (§7); elle `pnpm ingest <kaynak> [--dry-run]` |
 | `cleanup` | gece 03:00 | Süresi dolan OTP/oturum, 90 günden eski PlayLog (günlük özete indir), silinen hesapları anonimleştir |
 
 Sessiz saatler (varsayılan 01:00–10:00) ve kullanıcı tercihleri tüm push işlerinde uygulanır: sessiz saatte push
@@ -533,7 +533,8 @@ Tekilleştirme: `(normalize(title), venueId, startsAt ± 2 saat)` aynıysa aynı
 
 ## 9. Gözlemlenebilirlik
 
-- `/health` (canlılık) ve `/health/deep` (DB + en eski bekleyen push'un yaşı).
+- `/health` (canlılık) ve `/health/deep` (DB, en eski bekleyen push'un yaşı, son PlayLog, son istasyon kontrolü; sorun varsa 503).
+- Sentry: `SENTRY_DSN` ile açılır; yalnız hata ve yığın izi (kişisel veri toplama kapalı, `src/instrument.ts`).
 - Metrikler (admin dashboard'da): DAU, çalma oturumu, **eşleşme oranı** (eşleşen parça / metadata'lı parça),
   **köprü tıklama oranı** (discover kartı tıklaması / çalma oturumu), takip/kaydet sayıları, bilet çıkış tıklamaları,
   kırık istasyon sayısı, bekleyen başvurular.

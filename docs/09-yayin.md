@@ -88,15 +88,35 @@ Henüz sunucu dışına kopya alınmıyor (bkz. §7).
 5. Mobil uygulamada `EXPO_PUBLIC_API_URL=https://api.<alan-adı>`. iOS, production'da düz HTTP'ye izin vermez.
 6. `MAIL_FROM` için alan adının e-posta doğrulaması (SPF/DKIM), seçilen sağlayıcıya göre.
 
-## 7. Eksikler
+## 7. Açılmayı bekleyenler (kod hazır, anahtar/karar gerekiyor)
+
+Hepsi `/var/www/playce/apps/api/.env`'e yazılır, ardından `pm2 restart playce-api playce-worker`.
+
+| Ne | Değişken | Not |
+|---|---|---|
+| Etkinlik.io içe aktarma | `ETKINLIKIO_TOKEN` | Yayıncı ağı başvurusu. Önce deneme: `cd apps/api && pnpm ingest etkinlikio --dry-run`. Açılınca worker her gece 04:00'te çeker |
+| Ticketmaster (Biletix verisi var mı?) | `TICKETMASTER_API_KEY` | developer.ticketmaster.com'dan ücretsiz anahtar; `pnpm ingest ticketmaster --dry-run` kaç İstanbul müzik etkinliği geldiğini sayar, hiçbir şey yazmaz |
+| Hata takibi | `SENTRY_DSN` | **Önce KVKK:** yurt dışı aktarım standart sözleşmesi + 5 iş günü içinde bildirim (03 §8). SDK yalnız hata ve yığın izi gönderir (kullanıcı, başlık, gövde, sorgu kapalı — `src/instrument.ts`) |
+| Sunucu dışı yedek | `/etc/default/playce-backup` → `BACKUP_REMOTE="kullanici@sunucu:/yol/"` | Hedefe root'un SSH anahtarıyla şifresiz erişim gerekir; sonraki gece yedeği oraya da `rsync` ile kopyalanır |
+
+İçe aktarma turları: `GET /v1/admin/imports` (ADMIN). Elle tur: `POST /v1/admin/imports/<KAYNAK>/run?dryRun=1`.
+
+## 8. İzleme
+
+`GET http://94.138.209.152:8888/health/deep` → `{ ok, checks, problems }`. Sorun varsa **503**:
+- `pushQueueLagSec` > 5 dk (push kuyruğu birikti).
+- `lastPlayAgeSec` > 15 dk (worker ya da yoklayıcı durdu).
+- `lastStationCheckAgeSec` > 2 saat (sağlık işi çalışmıyor).
+
+Bir uptime servisine (UptimeRobot vb.) bu adres 5 dakikada bir verilir; 503'te e-posta gelir.
+
+## 9. Eksikler
 
 - **HTTPS yok** (alan adı bekleniyor). Mobil uygulama production build'de bu adrese bağlanamaz; şimdilik curl/Swagger ile test.
-- **Sunucu dışı yedek yok.** 03'teki plan: haftalık kopya başka bir yere.
-- **Sentry yok.**
 - **pm2 log döndürme yok** (`pm2-logrotate` sunucu genelinde kurulu değil). Worker dakikada bir satır yazar, günde ~150 KB.
 - **Trafik:** yoklayıcı dakikada 30 yayına bağlanıp ilk ICY bloğunu okur (istasyon başına ~16–32 KB). Bu, günde yaklaşık 1 GB gelen trafik demek.
 
-## 8. İlk kurulum (kayıt)
+## 10. İlk kurulum (kayıt)
 
 Bir kez çalıştırıldı (28 Eki 2026): `git clone … /var/www/playce && bash deploy/setup-server.sh`.
 [`deploy/setup-server.sh`](../deploy/setup-server.sh) idempotent; tekrar çalıştırmak var olanı ezmez. Yaptıkları:

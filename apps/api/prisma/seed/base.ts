@@ -53,6 +53,11 @@ export const TAGS: Record<string, [genre: string, weight: number][]> = {
   blues: [['jazz', 0.6], ['rock', 0.4]], soul: [['jazz', 0.5], ['hip-hop', 0.5]], funk: [['jazz', 0.5], ['hip-hop', 0.5]],
   lounge: [['lounge', 1]], chillout: [['lounge', 1]], downtempo: [['lounge', 1]], ambient: [['lounge', 1]], 'lo fi': [['lounge', 0.6], ['hip-hop', 0.4]],
   indie: [['indie', 1]], 'indie pop': [['indie', 1]], 'indie rock': [['indie', 0.7], ['rock', 0.3]], alternative: [['indie', 1]],
+  // Türkçe kategori/etiket adları (Etkinlik.io vb.)
+  caz: [['jazz', 1]], elektronik: [['techno', 0.6], ['deep-house', 0.4]], 'elektronik muzik': [['techno', 0.6], ['deep-house', 0.4]],
+  alternatif: [['indie', 1]], 'alternatif rock': [['indie', 0.5], ['rock', 0.5]], 'rap hip hop': [['turkce-rap', 0.6], ['hip-hop', 0.4]],
+  'hip hop rap': [['turkce-rap', 0.6], ['hip-hop', 0.4]], 'turk rock': [['anadolu-rock', 1]], 'anadolu': [['anadolu-rock', 0.5], ['turku', 0.5]],
+  'halk muzigi konseri': [['turku', 1]], 'turk halk': [['turku', 1]], 'turk sanat': [['fasil', 1]], 'dj performansi': [['techno', 0.5], ['deep-house', 0.5]],
 };
 
 const STW = (id: string) => `https://playerservices.streamtheworld.com/api/livestream-redirect/${id}.mp3`;

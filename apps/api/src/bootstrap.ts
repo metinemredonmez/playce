@@ -6,7 +6,7 @@ export function configureApp(app: INestApplication) {
   // nginx arkasında gerçek istemci IP'si (rate limit için).
   (app.getHttpAdapter().getInstance() as Express).set('trust proxy', 'loopback');
   app.enableCors();
-  app.setGlobalPrefix('v1', { exclude: ['health'] });
+  app.setGlobalPrefix('v1', { exclude: ['health', 'health/deep'] });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
   app.enableShutdownHooks();
   return app;

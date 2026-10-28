@@ -1,10 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, Interval } from '@nestjs/schedule';
+import * as Sentry from '@sentry/nestjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { FanoutService } from '../notifications/fanout.service';
 import { PushService } from '../notifications/push.service';
 import { PlaylogService } from '../playlog/playlog.service';
 import { StationHealthService } from '../stations/station-health.service';
+import { IngestService } from '../ingest/ingest.service';
 import { UsersService } from '../users/users.service';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -25,6 +27,7 @@ export class JobsService {
     private readonly playlog: PlaylogService,
     private readonly users: UsersService,
     private readonly stationHealth: StationHealthService,
+    private readonly ingest: IngestService,
   ) {}
 
   @Interval(10_000)
@@ -58,6 +61,19 @@ export class JobsService {
     return this.exclusive('station-health', () => this.stationHealth.checkAll());
   }
 
+  /** Gece 04:00: anahtarı tanımlı her kaynaktan etkinlik içe aktar (ETKINLIKIO_TOKEN, TICKETMASTER_API_KEY). */
+  @Cron('0 4 * * *', { timeZone: 'Europe/Istanbul' })
+  nightlyIngest() {
+    return this.exclusive('ingest', async () => {
+      const results: Record<string, number> = {};
+      for (const source of this.ingest.enabledSources()) {
+        const run = await this.ingest.run(source);
+        results[source] = run.created + run.updated + run.merged;
+      }
+      return results;
+    });
+  }
+
   @Cron('0 3 * * *', { timeZone: 'Europe/Istanbul' })
   nightlyCleanup() {
     return this.exclusive('cleanup', () => this.cleanup());
@@ -86,6 +102,7 @@ export class JobsService {
       if (hasWork(result)) this.log.log(`${name} ${JSON.stringify(result)} (${Date.now() - started} ms)`);
     } catch (e) {
       this.log.error(`${name} başarısız: ${(e as Error).message}`, (e as Error).stack);
+      Sentry.captureException(e, { tags: { job: name } });
     } finally {
       this.running.delete(name);
     }

@@ -38,6 +38,10 @@ MAIL_FROM=Playce <no-reply@playce.app>
 APPLE_AUDIENCES=app.playce.mobile
 GOOGLE_CLIENT_IDS=
 EXPO_ACCESS_TOKEN=
+# Etkinlik içe aktarma (gece 04:00) ve hata takibi — boşsa kapalı
+ETKINLIKIO_TOKEN=
+TICKETMASTER_API_KEY=
+SENTRY_DSN=
 ENV
   )
 fi

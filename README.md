@@ -57,6 +57,7 @@ pnpm dev:api            # http://localhost:3030/v1  (Swagger: /docs)
 pnpm dev:worker         # arka plan işleri (bildirim, radyo yoklayıcısı)
 pnpm ios                # Expo → iOS simülatör (Expo Go)
 pnpm test:api           # API e2e testleri (ayrı playce_dev_test veritabanında)
+pnpm --filter @playce/api ingest ticketmaster --dry-run   # dış kaynak denemesi (anahtar gerekir)
 ```
 
 `.env` eksik ya da hatalıysa API açılmaz ve hangi değişkenin sorunlu olduğunu yazar (`src/config/env.ts`).
@@ -90,6 +91,7 @@ için `X-Admin-Key`. Rol vermek için şimdilik: `UPDATE "User" SET role='ADMIN'
 | `GET /v1/admin/unmatched` · `POST …/:key/{link,create,ignore}` | Radyoda çalıp veritabanında olmayan sanatçılar (en çok çalan üstte) |
 | `GET /v1/admin/stations/health` · `POST …/stations/:slug/test` | İstasyon sağlığı; "test et" yayına hemen bağlanıp çalan parçayı da gösterir |
 | `GET /v1/admin/audit` | Denetim kaydı: her admin yazması kim/ne/hangi kayıt/gönderilen alanlarla (ADMIN rolü) |
+| `GET /v1/admin/imports` · `POST …/imports/:source/run?dryRun=1` | Etkinlik.io / Ticketmaster içe aktarma turları (ADMIN; anahtar `.env`'de) |
 
 Para kuruş cinsindendir: 450 TL = `45000`. `priceFrom: 0` girilirse etkinlik ücretsiz sayılır; bilet satıcısı
 (`ticketProvider`) verilmezse Biletix/Passo/Bubilet/Biletinial/Mobilet linkinden çıkarılır. `status: "REVIEW"` uygulamada görünmez.

@@ -48,7 +48,7 @@ Luca'dan (lucaevent) **bağımsız** bir projedir; kendi backend'i vardır.
 - `Link asChild` Pressable'ın fonksiyon stillerini uygulamıyor → kart bağlantıları için `PressLink`.
 
 ## Komutlar
-`pnpm dev:api` · `pnpm dev:worker` · `pnpm ios` · `pnpm db:create` · `pnpm db:migrate` · `pnpm db:seed` (temel + demo) · `pnpm db:seed:base` (yalnız tür/istasyon, prod) · `pnpm db:studio` · `pnpm typecheck` · `pnpm test:api`
+`pnpm dev:api` · `pnpm dev:worker` · `pnpm ios` · `pnpm --filter @playce/api ingest <etkinlikio|ticketmaster> [--dry-run]` · `pnpm db:create` · `pnpm db:migrate` · `pnpm db:seed` (temel + demo) · `pnpm db:seed:base` (yalnız tür/istasyon, prod) · `pnpm db:studio` · `pnpm typecheck` · `pnpm test:api`
 
 e2e testleri `apps/api/test/` altında, ayrı `<db>_test` veritabanında koşar (her çalıştırmada sıfırlanır).
 E-posta, Expo Push, radyo okuma ve Apple/Google anahtarları sahteyle değiştirilir (`test/utils.ts`).

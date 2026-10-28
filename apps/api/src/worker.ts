@@ -1,3 +1,4 @@
+import './instrument';
 import 'reflect-metadata';
 import { Logger, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';

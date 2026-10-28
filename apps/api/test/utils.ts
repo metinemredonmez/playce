@@ -10,6 +10,8 @@ import { ExpoMessage, ExpoPushClient, ExpoReceipt, ExpoTicket } from '../src/not
 import { JobsModule } from '../src/jobs/jobs.module';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { RadioService, StreamProbe, Track } from '../src/radio/radio.service';
+import { TicketmasterSource } from '../src/ingest/sources/ticketmaster';
+import { ExternalEvent } from '../src/ingest/types';
 
 export const ADMIN_KEY = process.env.ADMIN_KEY!;
 
@@ -54,6 +56,16 @@ export class RadioStub {
   }
 }
 
+/** Ticketmaster yerine: fetch() verilen etkinlikleri döner (anahtar tanımlı sayılır). */
+export class IngestSourceStub {
+  readonly source = 'TICKETMASTER' as const;
+  readonly enabled = true;
+  events: ExternalEvent[] = [];
+  async fetch(): Promise<ExternalEvent[]> {
+    return this.events;
+  }
+}
+
 /** Apple/Google yerine yerel RSA anahtarıyla imzalanan kimlik token'ları. */
 export class IdTokenSigner {
   private constructor(
@@ -85,6 +97,7 @@ export type TestContext = {
   mail: MailStub;
   expo: ExpoStub;
   radio: RadioStub;
+  ticketmaster: IngestSourceStub;
   signer: IdTokenSigner;
   http: () => ReturnType<typeof request>;
   get<T>(type: new (...args: never[]) => T): T;
@@ -94,6 +107,7 @@ export async function createTestApp(): Promise<TestContext> {
   const mail = new MailStub();
   const expo = new ExpoStub();
   const radio = new RadioStub();
+  const ticketmaster = new IngestSourceStub();
   const signer = await IdTokenSigner.create();
   const moduleRef = await Test.createTestingModule({ imports: [AppModule, JobsModule] })
     .overrideProvider(MailService)
@@ -102,6 +116,8 @@ export async function createTestApp(): Promise<TestContext> {
     .useValue(expo)
     .overrideProvider(RadioService)
     .useValue(radio)
+    .overrideProvider(TicketmasterSource)
+    .useValue(ticketmaster)
     .overrideProvider(JWKS_RESOLVER)
     .useValue(() => signer.jwks)
     .compile();
@@ -113,6 +129,7 @@ export async function createTestApp(): Promise<TestContext> {
     mail,
     expo,
     radio,
+    ticketmaster,
     signer,
     http: () => request(app.getHttpServer()),
     get: (type) => app.get(type),

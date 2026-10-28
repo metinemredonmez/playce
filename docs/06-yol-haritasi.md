@@ -34,9 +34,9 @@
 - [x] Yerel türler (ADR-016): Türkçe Rap, Arabesk & Fantezi, Anadolu & Türkçe Rock, Fasıl & Türk Sanat (14 tür, 8 yeni istasyon); `TagGenreMap` ilk sürümü (~90 etiket).
 - [x] `radio`: StreamTheWorld (Karnaval) yayınlarında Triton now-playing XML (sanatçı, parça, kapak); bilgi yoksa ya da eskiyse ICY'ye düşer (ADR-024).
 - [x] Güven alanları (`sellerName`, `totalPriceNote`, `refundPolicy`; mekânda `doorPolicy`, `dressCode`, `ageLimit`) ve alkol denetimi: işaretli etkinlik `REVIEW`'a düşer, işaretli mekân metni kaydedilmez, MODERATOR+ `allowFlagged` ile geçirir; `GET /v1/admin/events?status=REVIEW` (ADR-015).
-- [ ] `ingest:etkinlikio` (token gelince) ve Ticketmaster `countryCode=TR` deneme betiği.
-- [ ] **Yayın:** ~~VPS'te Postgres kullanıcı/DB, `playce-api` + `playce-worker` (pm2), nginx, gece `pg_dump`~~ ✅ 28 Eki — geçici `http://94.138.209.152:8888` ([09](09-yayin.md)). Kalan: alan adı + certbot (HTTPS), sunucu dışı yedek, Sentry, e-posta sağlayıcısı.
-- [x] e2e: auth, takip/kaydet, fan-out, bildirim, PlayLog, arama, istasyon sağlığı, etkinlik filtreleri, AuditLog, seed, discover, mekân saatleri, Triton, alkol denetimi (85 test).
+- [x] İçe aktarma: Etkinlik.io + Ticketmaster (`pnpm ingest <kaynak> [--dry-run]`, gece 04:00, admin `imports`); tekilleştirme ve mekân eşleme. **Anahtarlar bekleniyor** (`ETKINLIKIO_TOKEN`, `TICKETMASTER_API_KEY`).
+- [ ] **Yayın:** ~~VPS'te Postgres kullanıcı/DB, `playce-api` + `playce-worker` (pm2), nginx, gece `pg_dump`~~ ✅ 28 Eki — geçici `http://94.138.209.152:8888` ([09](09-yayin.md)). `/health/deep` ✅; Sentry ve sunucu dışı yedek kodda hazır (DSN / hedef bekleniyor). Kalan: alan adı + certbot (HTTPS), e-posta sağlayıcısı.
+- [x] e2e: auth, takip/kaydet, fan-out, bildirim, PlayLog, arama, istasyon sağlığı, etkinlik filtreleri, AuditLog, seed, discover, mekân saatleri, Triton, alkol denetimi, içe aktarma, derin sağlık (94 test).
 
 ## Faz 2 — Admin paneli (Hafta 3–4)
 - [ ] `apps/admin` Next.js 15 + shadcn iskeleti, OTP girişi, rol bazlı menü.

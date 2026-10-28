@@ -101,6 +101,13 @@ Her önemli karar burada: bağlam → karar → sonuç. Yeni karar en alta, numa
   4. Bandsintown / Ticketmaster (test sonrası)
   5. Bilet platformlarıyla derin link + UTM ve gelir paylaşımı teklifi
 - **Kazıma yok:** Bilet sitelerinin kullanım koşulları, bot korumaları ve haksız rekabet riski nedeniyle hukuk görüşü olmadan yapılmaz.
+- **Uygulama (Faz 1, 28 Eki 2026):** `src/ingest/` — Etkinlik.io (resmi SDK 2.0.11 alan adları) ve Ticketmaster Discovery.
+  - Yalnız İstanbul ve müzik. Müzik sayılması için şunlardan biri yeter: etiket `TagGenreMap`'te bir türe denk gelir, sahne alan sanatçı eşleşir ya da etiket "konser/müzik/festival/parti" içerir.
+  - Tekilleştirme: aynı mekân + ±2 saat + başlık aynı ya da biri diğerini içeriyor → yeni kayıt açılmaz, `ExternalRef` eklenir.
+  - Mekân eşlemesi sırası: kaynak kimliği, ad (normalize), ~100 m yakınlık. Hiçbiri tutmazsa yeni mekân açılır (`source=IMPORT`; semt yoksa "İstanbul").
+  - İçe aktarılan etkinlik doğrudan yayınlanır ve takipçilere duyurulur. Alkol denetimine takılırsa `REVIEW`.
+  - Sonraki turlar yalnız `IMPORT` kayıtlarını günceller: saat, fiyat, bilet, iptal. Admin'in kaydına dokunulmaz.
+  - Her tur `ImportRun`'a yazılır (sayılar + ilk 20 hata); `--dry-run` hiçbir şey yazmadan sayar.
 
 ## ADR-018 · Reklamsız radyo
 - **Bağlam:** Türk radyo uygulamalarının en büyük şikâyeti reklam. En memnun uygulama reklamsız olan (TRT Dinle 4,79).

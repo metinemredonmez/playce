@@ -15,7 +15,8 @@
     "db:seed:base": "ts-node prisma/seed/base.ts",
     "dev:worker": "nest start --watch --entryFile worker",
     "start:worker": "node dist/worker.js",
-    "test:e2e": "jest --config test/jest-e2e.json --runInBand"
+    "test:e2e": "jest --config test/jest-e2e.json --runInBand",
+    "ingest": "ts-node src/ingest/cli.ts"
   },
   "prisma": {
     "seed": "ts-node prisma/seed/demo.ts"
@@ -30,6 +31,7 @@
     "@nestjs/swagger": "^11.4.7",
     "@nestjs/throttler": "^6.7.1",
     "@prisma/client": "^5.22.0",
+    "@sentry/nestjs": "11.6.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "jose": "^5.10.0",

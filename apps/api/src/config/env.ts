@@ -25,6 +25,11 @@ const schema = z
     APPLE_AUDIENCES: csv('app.playce.mobile'),
     GOOGLE_CLIENT_IDS: csv(),
     EXPO_ACCESS_TOKEN: z.string().optional(),
+    // Etkinlik içe aktarma (boşsa o kaynak kapalı)
+    ETKINLIKIO_TOKEN: z.string().optional(),
+    TICKETMASTER_API_KEY: z.string().optional(),
+    // Hata takibi (boşsa kapalı). Yurt dışı aktarım: KVKK sözleşmesi + bildirim sonrası aç (03 §8).
+    SENTRY_DSN: z.string().url().optional(),
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV !== 'production') return;
