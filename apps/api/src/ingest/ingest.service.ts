@@ -7,13 +7,11 @@ import { trDateKey } from '../common/time';
 import { distanceKm } from '../common/geo';
 import { ticketProviderFor } from '../common/tickets';
 import { alcoholFlags } from '../moderation/alcohol';
+import { findDuplicateEvents } from '../events/duplicates';
 import { EtkinlikIoSource } from './sources/etkinlikio';
 import { TicketmasterSource } from './sources/ticketmaster';
 import { ExternalEvent, ExternalVenue, IngestSource } from './types';
 
-const HOUR_MS = 60 * 60 * 1000;
-/** Aynı mekânda bu kadar yakın saatte, başlığı uyan etkinlik aynı sayılır (03 §7) */
-const SAME_EVENT_WINDOW_MS = 2 * HOUR_MS;
 /** Koordinatı bu kadar yakın mekân aynı sayılır */
 const SAME_VENUE_KM = 0.1;
 /** Bitmemiş tur bu süreden eskiyse takılmış sayılır, yenisi başlayabilir */
@@ -208,19 +206,8 @@ export class IngestService {
 
   /** Aynı mekân, ±2 saat ve başlık aynı ya da biri diğerini içeriyor ("Duman" ↔ "Duman Konseri") */
   private async findDuplicate(venueId: string, e: ExternalEvent) {
-    const candidates = await this.prisma.event.findMany({
-      where: {
-        venueId,
-        startsAt: { gte: new Date(e.startsAt.getTime() - SAME_EVENT_WINDOW_MS), lte: new Date(e.startsAt.getTime() + SAME_EVENT_WINDOW_MS) },
-      },
-      select: { id: true, title: true },
-    });
-    const a = normalize(e.title);
-    return candidates.find((c) => {
-      const b = normalize(c.title);
-      const [short, long] = a.length <= b.length ? [a, b] : [b, a];
-      return a === b || (short.length >= 4 && long.includes(short));
-    })?.id;
+    const [first] = await findDuplicateEvents(this.prisma, { venueId, startsAt: e.startsAt, title: e.title });
+    return first?.id;
   }
 
   /** Kaynak sahne alanları veriyorsa onları, vermiyorsa başlıktaki sanatçıyı eşler. */

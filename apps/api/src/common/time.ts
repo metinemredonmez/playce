@@ -46,6 +46,12 @@ export function windowFor(when: When, now = new Date()): { from: Date; to?: Date
   return { from, to };
 }
 
+/** Panelde "bugün": İstanbul günü 06:00 → ertesi gün 06:00 (gece yarısını geçen etkinlik o güne sayılır). */
+export function trTodayWindow(now = new Date()): { from: Date; to: Date } {
+  const day = startOfTrDay(new Date(now.getTime() - 6 * HOUR));
+  return { from: new Date(day.getTime() + 6 * HOUR), to: new Date(day.getTime() + DAY + 6 * HOUR) };
+}
+
 /** Bitiş saati girilmemiş etkinlik için varsayılan süre. */
 export const DEFAULT_EVENT_HOURS = 5;
 export const HOUR_MS = HOUR;

@@ -127,7 +127,7 @@ describe('etkinlikler', () => {
   });
 
   it('admin: ücretsiz bayrağı fiyattan, bilet satıcısı linkten türetilir', async () => {
-    const doorsAt = '2030-05-01T20:00:00.000Z';
+    const doorsAt = '2030-05-01T17:00:00.000Z'; // 20:00 İstanbul, başlangıçtan önce
     await ctx
       .http()
       .post('/v1/admin/events')

@@ -68,6 +68,20 @@ export class SearchService {
     };
   }
 
+  /** Panel seçicileri (etkinlik formunda mekân/sanatçı): aynı eşleşme kuralı, daha uzun liste. */
+  async lookup(kind: 'venue' | 'artist', raw: string, limit = 10) {
+    const q = normalize(raw);
+    if (q.length < 2) return [];
+    const [, rows] = await this.prisma.$transaction([
+      this.prisma.$queryRaw`SELECT set_config('pg_trgm.word_similarity_threshold', ${String(FUZZY)}, true)`,
+      this.match(kind === 'venue' ? 'Venue' : 'Artist', q, limit),
+    ]);
+    const where = { id: { in: rows.map((r) => r.id) } };
+    return kind === 'venue'
+      ? inOrder(await this.prisma.venue.findMany({ where, select: { id: true, slug: true, name: true, district: true, ageLimit: true } }), rows)
+      : inOrder(await this.prisma.artist.findMany({ where, select: { id: true, slug: true, name: true, imageUrl: true } }), rows);
+  }
+
   /** q normalize edilmiş olduğundan yalnız [a-z0-9 ] içerir: LIKE joker karakteri kaçırmaya gerek yok. */
   private match(table: Table, q: string, limit: number, extra = Prisma.empty) {
     const fuzzy = q.length >= FUZZY_MIN_LENGTH ? Prisma.sql`OR ${q} <% "searchText"` : Prisma.empty;

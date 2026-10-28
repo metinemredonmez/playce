@@ -1,10 +1,13 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiSecurity, ApiTags } from '@nestjs/swagger';
 import { AuthUser, CurrentUser, Roles } from '../auth/decorators';
 import { Audit } from '../audit/audit.decorator';
+import { SearchService } from '../search/search.service';
+import { SearchQuery } from '../search/search.dto';
 import { AdminService } from './admin.service';
 import {
   AdminEventsQuery,
+  CheckEventDto,
   CreateArtistDto,
   CreateEventDto,
   CreateStationDto,
@@ -16,7 +19,7 @@ import {
   VenueHoursDto,
 } from './admin.dto';
 
-// İçerik yönetimi. Panel gelene kadar Swagger (/docs) üzerinden kullanılır.
+// İçerik yönetimi (apps/admin paneli; Swagger /docs da kullanılabilir).
 // EDITOR+ rolü (JWT) ya da geçiş dönemi için X-Admin-Key. Her yazma AuditLog'a düşer.
 @ApiTags('admin')
 @ApiBearerAuth()
@@ -24,16 +27,26 @@ import {
 @Roles('EDITOR')
 @Controller('admin')
 export class AdminController {
-  constructor(private readonly admin: AdminService) {}
+  constructor(
+    private readonly admin: AdminService,
+    private readonly search: SearchService,
+  ) {}
 
   /** Bekleyen iş sayıları (panel menü rozetleri) */
   @Get('queues') queues() { return this.admin.queues(); }
 
-  /** Moderasyon kuyruğu: ?status=REVIEW — her öğede alkol denetimi bayrakları */
+  /** Etkinlik listesi ve moderasyon kuyruğu (?status=REVIEW) — her öğede alkol denetimi bayrakları */
   @Get('events') listEvents(@Query() q: AdminEventsQuery) { return this.admin.listEvents(q); }
+  /** Formda kaydetmeden önce: alkol denetimi + olası kopya. Yazmaz. */
+  @Post('events/check') @HttpCode(200) checkEvent(@Body() dto: CheckEventDto) { return this.admin.checkEvent(dto); }
+  @Get('events/:slug') getEvent(@Param('slug') slug: string) { return this.admin.getEvent(slug); }
   @Post('events') @Audit('event.create') createEvent(@Body() dto: CreateEventDto, @CurrentUser() user: AuthUser) { return this.admin.createEvent(dto, user); }
   @Patch('events/:slug') @Audit('event.update') updateEvent(@Param('slug') slug: string, @Body() dto: UpdateEventDto, @CurrentUser() user: AuthUser) { return this.admin.updateEvent(slug, dto, user); }
   @Delete('events/:slug') @Audit('event.delete') deleteEvent(@Param('slug') slug: string) { return this.admin.deleteEvent(slug); }
+
+  /** Form seçicileri: Türkçe karakter ve yazım hatası duyarsız, en fazla 10 sonuç */
+  @Get('lookup/venues') lookupVenues(@Query() q: SearchQuery) { return this.search.lookup('venue', q.q); }
+  @Get('lookup/artists') lookupArtists(@Query() q: SearchQuery) { return this.search.lookup('artist', q.q); }
 
   @Post('venues') @Audit('venue.create') createVenue(@Body() dto: CreateVenueDto, @CurrentUser() user: AuthUser) { return this.admin.createVenue(dto, user); }
   @Patch('venues/:slug') @Audit('venue.update') updateVenue(@Param('slug') slug: string, @Body() dto: UpdateVenueDto, @CurrentUser() user: AuthUser) { return this.admin.updateVenue(slug, dto, user); }

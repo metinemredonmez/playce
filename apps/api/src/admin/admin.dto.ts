@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   ArrayUnique,
@@ -7,6 +7,7 @@ import {
   IsBoolean,
   IsDateString,
   IsEnum,
+  IsIn,
   IsInt,
   IsLatitude,
   IsLongitude,
@@ -19,7 +20,7 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
-import { EventStatus, ExternalSource } from '@prisma/client';
+import { DataSource, EventStatus, ExternalSource } from '@prisma/client';
 import { SLUG_PATTERN as SLUG } from '../common/text';
 import { HHMM } from '../venues/hours';
 
@@ -83,10 +84,36 @@ export class VenueHoursDto {
   @IsArray() @ArrayMaxSize(7) @ValidateNested({ each: true }) @Type(() => VenueHourDto) hours: VenueHourDto[];
 }
 
+export const ADMIN_WHENS = ['today', 'week', 'upcoming', 'past'] as const;
+export type AdminWhen = (typeof ADMIN_WHENS)[number];
+export const MISSING = ['cover', 'ticket'] as const;
+
 export class AdminEventsQuery {
   @ApiPropertyOptional({ enum: EventStatus, example: 'REVIEW' }) @IsOptional() @IsEnum(EventStatus) status?: EventStatus;
+  @ApiPropertyOptional({ enum: ADMIN_WHENS, description: 'Verilmezse tüm tarihler. past = bitmiş (yeniden eskiye)' })
+  @IsOptional() @IsIn(ADMIN_WHENS) when?: AdminWhen;
+  @ApiPropertyOptional({ description: 'Başlık ya da mekân adı (Türkçe karakter duyarsız)' })
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @IsOptional() @IsString() @MaxLength(60) q?: string;
+  @ApiPropertyOptional({ description: 'Tür slug' }) @IsOptional() @Matches(SLUG) genre?: string;
+  @ApiPropertyOptional({ description: 'Mekân slug' }) @IsOptional() @Matches(SLUG) venue?: string;
+  @ApiPropertyOptional({ enum: DataSource }) @IsOptional() @IsEnum(DataSource) source?: DataSource;
+  @ApiPropertyOptional({ enum: MISSING, description: 'cover = kapağı yok, ticket = ücretli ama bilet linki yok' })
+  @IsOptional() @IsIn(MISSING) missing?: (typeof MISSING)[number];
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(40) cursor?: string;
   @ApiPropertyOptional({ default: 50 }) @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(200) limit?: number;
+}
+
+/** Formda kaydetmeden önce: alkol denetimi ve olası kopya (aynı mekân, ±2 saat, benzer başlık). */
+export class CheckEventDto {
+  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(140) title?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(4000) description?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(120) sellerName?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(200) totalPriceNote?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(500) refundPolicy?: string;
+  @ApiPropertyOptional() @IsOptional() @Matches(SLUG) venueSlug?: string;
+  @ApiPropertyOptional() @IsOptional() @IsDateString() startsAt?: string;
+  @ApiPropertyOptional({ description: 'Düzenlenen etkinlik (kendisi kopya sayılmasın)' }) @IsOptional() @Matches(SLUG) exclude?: string;
 }
 
 export class CreateArtistDto {
