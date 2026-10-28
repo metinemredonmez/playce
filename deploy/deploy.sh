@@ -12,5 +12,5 @@ pnpm --filter @playce/api build
 pm2 restart playce-api playce-worker --update-env
 pm2 save
 
-sleep 3
-curl -fsS http://127.0.0.1:3030/health && echo " ← API ayakta"
+# Açılış birkaç saniye sürer (Prisma, Sentry); 30 sn'ye kadar dene
+curl -fsS --retry 15 --retry-connrefused --retry-delay 2 http://127.0.0.1:3030/health && echo " ← API ayakta"
