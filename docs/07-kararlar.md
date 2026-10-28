@@ -58,7 +58,7 @@ Her önemli karar burada: bağlam → karar → sonuç. Yeni karar en alta, numa
 
 ## ADR-014 · Sunucu: mevcut VPS
 - **Bağlam:** VPS 5,8 GB RAM (4,4 GB boş), 34 GB disk, 2 çekirdek, Postgres 16, nginx, Node 22; üzerinde hazal ve ogulcanates projeleri var.
-- **Karar:** `playce-api`, `playce-worker`, `playce-admin` pm2 süreçleri; ayrı Postgres veritabanı/kullanıcısı; Redis kurulacak.
+- **Karar:** `playce-api`, `playce-worker`, `playce-admin` pm2 süreçleri; ayrı Postgres veritabanı/kullanıcısı. Redis MVP'de gerekmiyor (ADR-020).
   Güncellemede `pm2 restart all` **kullanılmaz** (diğer projeleri de yeniden başlatır) → `pm2 restart playce-*`.
 
 ## ADR-015 · Alkol mevzuatı: tanıtım yok, 18+ kapısı
@@ -100,3 +100,34 @@ Her önemli karar burada: bağlam → karar → sonuç. Yeni karar en alta, numa
   - Lansmandan önce çalınan her Türk istasyonu için yazılı izin veya ortaklık alınır. Öncelik Karnaval (Süper, Metro, JoyTürk, Joy, Virgin), Power ve Doğuş (Kral).
   - İzni olmayan istasyon küratörlü listeden çıkar.
   - Ortaklık teklifi: istasyon trafiği + istasyon markalı "bu gece" seçkisi + dinleyici istatistikleri.
+
+## ADR-020 · Bildirim gönderimi: DB outbox (MVP'de Redis/BullMQ yok)
+- **Bağlam:** 03'te iş kuyruğu olarak BullMQ + Redis planlanmıştı. Faz 1'deki işlerin hepsi periyodik
+  (push gönderimi, fan-out, hatırlatma, radyo yoklayıcısı, temizlik) ve tek worker yetiyor. VPS'te Redis yok.
+- **Karar:**
+  - `Notification` satırı aynı zamanda gönderim kuyruğu: `pushState` (PENDING/SENT/SKIPPED/FAILED) + `pushAfter`.
+  - `playce-worker` süreci `@nestjs/schedule` ile 10 sn'de bir bekleyenleri Expo Push'a yollar; makbuzları 15 dk'da bir okur.
+  - Fan-out `Event.fanoutAt` ile, hatırlatma `SavedEvent.remindedAt` ile işaretlenir; `dedupeKey` aynı bildirimin iki kez oluşmasını engeller.
+  - Bildirim yalnız `NotificationsService.notify()` ile üretilir (tercih, sessiz saat, tekilleştirme orada).
+- **Sonuç:** Redis kurmadan çalışır; API çökerken üretilen bildirim kaybolmaz. Worker **tek kopya** çalışmalı.
+  Kampanya gibi büyük toplu gönderimler veya çok worker gerektiğinde BullMQ'ya geçilir.
+
+## ADR-021 · NestJS 11'de kal (12 ESM-only)
+- **Bağlam:** Bağımlılık açıklarını kapatırken (36 → 2) NestJS 12 de çıkmıştı (Ağustos 2026). 12 ESM-only;
+  Prisma 5 istemcisi, ts-node seed ve Jest kurulumu CommonJS.
+- **Karar:** NestJS 11.2 (güvenlik yamalı, CommonJS). `jose` 5'te kalır (6 ESM-only). Kalan 2 açık yalnız
+  geliştirme araçlarında: `zod@3` (@expo/cli, 3.x için yama yok) ve `deepmerge` (yama yok).
+- **Sonuç:** ESM geçişi (Nest 12 + Prisma 7) ayrı bir iş olarak planlanır.
+
+## ADR-022 · Kimlik: varsayılan kapalı uçlar, dönen refresh token
+- **Karar:**
+  - Global `AuthGuard`: her uç giriş ister; açık uçlar `@Public()` ile işaretlenir. Public uçta bozuk/eski token hata
+    vermez (gezinme bozulmasın). Rol ve oturum her istekte DB'den okunur: çıkış ve ban anında etkili.
+  - Access token 15 dk (HS256 JWT). Refresh token rastgele, DB'de yalnız sha256'sı; her kullanımda döner.
+    Bir önceki token 30 sn'den sonra tekrar gelirse çalınmış sayılır → kullanıcının tüm oturumları kapanır.
+  - E-posta kodu sunucu sırrıyla HMAC'lenir; 60 sn'de 1, saatte 5 kod, 5 yanlış denemede iptal.
+  - Apple/Google token'ları yayıncının JWKS'iyle doğrulanır. **Doğrulanmış** aynı e-posta → aynı hesaba bağlanır.
+  - Hesap silme: anında kapanır; 30 gün içinde giriş yapılırsa geri gelir, sonra kişisel veri anonimleştirilir
+    (takip/kaydet satırları kimliksiz kalır, toplam sayılar bozulmasın).
+  - Admin uçları `@Roles('EDITOR')`; geçiş dönemi için `X-Admin-Key` hâlâ kabul edilir (Faz 2'de admin paneli
+    OTP girişiyle kalkacak).

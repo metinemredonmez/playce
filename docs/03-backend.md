@@ -1,6 +1,7 @@
 # 03 — Backend MVP
 
-> Durum: prototip çalışıyor (tür/istasyon/now-playing/etkinlik/mekân/sanatçı/discover + admin key).
+> Durum (28 Eki 2026): Faz 1'in ilk yarısı bitti — kimlik, kullanıcı, takip/kaydet, bildirim ve PlayLog çalışıyor,
+> 43 e2e testi geçiyor. Kalanlar: [06-yol-haritasi.md](06-yol-haritasi.md) Faz 1 listesi.
 > Bu doküman MVP'ye (İstanbul lansmanı) kadar backend'in **hedef halini** tanımlar.
 > Kapsam ve öncelik: [02-mvp-kapsam.md](02-mvp-kapsam.md). Kararlar: [07-kararlar.md](07-kararlar.md).
 
@@ -20,9 +21,9 @@
                     │           │           │
               ┌─────▼───┐ ┌─────▼────┐ ┌────▼─────────┐
               │Postgres │ │  Redis   │ │ Object store │
-              │   16    │ │ (BullMQ, │ │ (R2/S3 —     │
-              │         │ │  cache)  │ │  görseller)  │
-              └─────────┘ └────┬─────┘ └──────────────┘
+              │   16    │ │ (sonra — │ │ (R2/S3 —     │
+              │ +outbox │ │ ADR-020) │ │  görseller)  │
+              └────┬────┘ └──────────┘ └──────────────┘
                                │
                       ┌────────▼─────────┐
                       │ Worker (pm2,      │  istasyon sağlığı, now-playing
@@ -33,33 +34,34 @@
                       MusicBrainz · (bilet/etkinlik kaynakları — 01-rakip-analizi §veri)
 ```
 
-- **Tek kod tabanı, iki süreç:** `playce-api` (HTTP) ve `playce-worker` (BullMQ işleri). Aynı Nest modülleri, `main.ts` / `worker.ts` iki giriş.
+- **Tek kod tabanı, iki süreç:** `playce-api` (HTTP) ve `playce-worker` (zamanlanmış işler, `@nestjs/schedule`). Aynı Nest modülleri, `main.ts` / `worker.ts` iki giriş.
+- **Kuyruk = veritabanı (ADR-020):** bildirim satırı aynı zamanda push kuyruğu; MVP'de Redis/BullMQ yok.
 - **Sürümleme:** tüm public uçlar `/v1` altında. Mobil eski sürümler kırılmasın diye alan silmek yerine yenisini ekle.
-- **Sunucu:** mevcut VPS (5,8 GB RAM, 2 çekirdek, Postgres 16, nginx 1.24, Node 22). Tahmini kullanım: API ~200 MB + worker ~150 MB + Redis ~50 MB.
+- **Sunucu:** mevcut VPS (5,8 GB RAM, 2 çekirdek, Postgres 16, nginx 1.24, Node 22). Tahmini kullanım: API ~200 MB + worker ~150 MB.
 
 ## 2. Modüller
 
 | Modül | Sorumluluk | Durum |
 |---|---|---|
-| `auth` | E-posta OTP, Apple, Google girişi; JWT access (15 dk) + refresh (30 gün, rotasyonlu) | yeni |
-| `users` | Profil, şehir, zevk (türler), KVKK onayları, hesap silme/dışa aktarma | yeni |
+| `auth` | E-posta OTP, Apple, Google girişi; JWT access (15 dk) + refresh (30 gün, rotasyonlu); global `AuthGuard` + `RolesGuard` | ✅ |
+| `users` | Profil, şehir, zevk (türler), KVKK onayları, hesap silme/dışa aktarma | ✅ |
 | `genres` | Tür listesi, renk, radioTag | var |
 | `stations` | Küratörlü istasyon + radio-browser araması, sağlık durumu | var → genişlet |
 | `radio` | ICY okuma, parça ayrıştırma, SSRF koruması | var |
-| `playlog` | Çalan parça kaydı, eşleşmeyen sanatçı kuyruğu, istatistik | yeni |
+| `playlog` | Çalan parça kaydı, eşleşmeyen sanatçı kuyruğu, "radyoda çaldı" bildirimi | ✅ (istatistik uçları Faz 2) |
 | `artists` | Sanatçı, alias, eşleştirme indeksi, dış kimlikler, birleştirme | var → genişlet |
 | `venues` | Mekân, çalışma saatleri, fotoğraf, Google Place bağı, "mekânın sesi" | var → genişlet |
 | `events` | Etkinlik, lineup, durum akışı, bilet bağlantısı, seri | var → genişlet |
 | `discover` | `/discover/now` köprüsü, ana sayfa akışı, öneri skoru | var → genişlet |
 | `search` | Sanatçı/mekân/etkinlik/istasyon birleşik arama (pg_trgm) | yeni |
-| `social` | Takip (sanatçı/mekân), kaydet/gidiyorum, favori istasyon | yeni (mobilde yerel) |
-| `notifications` | Push token, bildirim kutusu, kampanya, tercih | yeni |
+| `social` | Takip (sanatçı/mekân), kaydet/gidiyorum, favori istasyon, cihazdan birleştirme | ✅ (mobil bağlantısı Faz 4) |
+| `notifications` | Push token, bildirim kutusu, tercih, Expo gönderici, fan-out, hatırlatma | ✅ (kampanya Faz 2) |
 | `submissions` | Organizatör/mekân başvurusu, moderasyon | yeni |
 | `media` | Görsel yükleme (presigned URL), boyutlandırma | yeni |
 | `ingest` | Dış kaynaklardan etkinlik/sanatçı içe aktarma, tekilleştirme | yeni |
-| `admin` | Rol tabanlı admin uçları, dashboard metrikleri | var (key) → JWT+rol |
+| `admin` | Rol tabanlı admin uçları, dashboard metrikleri | JWT+rol ✅ (key geçiş dönemi), AuditLog yok |
 | `audit` | Admin değişiklik kaydı | yeni |
-| `health` | `/health`, `/health/deep` (DB, Redis) | var → genişlet |
+| `health` | `/health`, `/health/deep` (DB, push kuyruğu gecikmesi) | var → genişlet |
 
 ## 3. Veri modeli (hedef)
 
@@ -400,7 +402,8 @@ Liste uçları **cursor** sayfalama: `?cursor=<id>&limit=20` → `{ items, nextC
 | `GET /v1/events/:slug/ics` | 🔓 | Takvime ekle dosyası |
 | `GET /v1/venues?genre&district&openNow&near&cursor` | 🔓 | Bu gece açık olanlar önce |
 | `GET /v1/venues/:slug` | 🔓 | Detay + saatler + fotoğraflar + program + "mekânın sesi" |
-| `GET /v1/artists/:slug` | 🔓 | Detay + konserler + "son çaldığı istasyonlar" (PlayLog) |
+| `GET /v1/artists/:slug` | 🔓 | Detay + konserler + `onRadio` (son 7 günde çaldığı istasyonlar, PlayLog) |
+| `GET /v1/stations/:slug/plays?limit` | 🔓 | İstasyonda son çalanlar (eşleşen sanatçıyla) |
 | `GET /v1/search?q` | 🔓 | `{ artists, venues, events, stations }` — Türkçe karakter duyarsız |
 | `GET /v1/districts` | 🔓 | Semt listesi (filtre için) |
 | `POST /v1/submissions` | 🔓 | Organizatör etkinlik/mekân başvurusu (rate limit + captcha) |
@@ -426,10 +429,11 @@ Liste uçları **cursor** sayfalama: `?cursor=<id>&limit=20` → `{ items, nextC
 | `PUT/DELETE /v1/me/follows/venues/:slug` | 🔐 | mekân takip |
 | `PUT/DELETE /v1/me/saves/:eventSlug {status}` | 🔐 | ilgileniyorum / gidiyorum |
 | `GET /v1/me/saves?when=upcoming\|past` | 🔐 | takvimim |
-| `GET/PUT/DELETE /v1/me/stations` | 🔐 | favori istasyonlar (cihazdaki favoriler girişte birleştirilir) |
+| `GET/PUT /v1/me/stations` · `DELETE /v1/me/stations?url=` | 🔐 | favori istasyonlar (URL ile tekil) |
+| `POST /v1/me/merge-device` | 🔐 | girişten önce cihazda tutulan favori istasyon/mekân/sanatçı/etkinlikleri hesaba taşır |
 | `GET /v1/me/following` | 🔐 | takip edilen sanatçı/mekânlar |
 | `POST /v1/me/push-tokens` | 🔓/🔐 | cihaz token kaydı (girişsiz de olur) |
-| `GET /v1/me/notifications` · `POST …/read` | 🔐 | bildirim kutusu |
+| `GET /v1/me/notifications?cursor&limit` · `POST …/read {ids?}` | 🔐 | bildirim kutusu → `{items, nextCursor, unread}` |
 | `GET/PATCH /v1/me/notification-prefs` | 🔐 | bildirim tercihleri, sessiz saatler |
 
 ### 4.4 Admin (🛡)
@@ -452,7 +456,7 @@ Liste uçları **cursor** sayfalama: `?cursor=<id>&limit=20` → `{ items, nextC
 | İçe aktarma | `POST imports/:source/run`, `GET imports` | ADMIN |
 | Denetim | `GET audit?entityType&entityId&actor` | ADMIN |
 
-## 5. Arka plan işleri (BullMQ, `playce-worker`)
+## 5. Arka plan işleri (`playce-worker`, `src/jobs/jobs.service.ts`)
 
 | İş | Sıklık | Ne yapar |
 |---|---|---|
@@ -461,12 +465,14 @@ Liste uçları **cursor** sayfalama: `?cursor=<id>&limit=20` → `{ items, nextC
 | `event-fanout` | etkinlik yayınlanınca | Sanatçı ve mekân takipçilerine `ARTIST_NEW_EVENT` / `VENUE_NEW_EVENT` |
 | `event-reminder` | 5 dk | `SavedEvent` → başlangıçtan 3 saat önce `EVENT_REMINDER` (bir kez) |
 | `weekly-digest` | Perşembe 18:00 TRT | Zevke + takiplere göre hafta sonu seçkisi (en fazla 5) |
-| `campaign-send` | zamanlanınca | Segmenti çöz → Expo Push toplu gönderim (100'lük paketler), makbuzları topla |
+| `push-dispatch` | 10 sn | `PENDING` ve `pushAfter ≤ şimdi` bildirimleri Expo'ya (100'lük paketler); cihaz yoksa `SKIPPED`, 6 saatte gidemeyen `FAILED` |
+| `campaign-send` | zamanlanınca | Segmenti çöz → bildirim satırları üret (gönderimi `push-dispatch` yapar) — Faz 2 |
 | `push-receipts` | 15 dk | Expo makbuzları; `DeviceNotRegistered` → token sil |
 | `ingest:<kaynak>` | gece 04:00 | Dış kaynaklardan etkinlik içe aktar, tekilleştir (§7) |
 | `cleanup` | gece 03:00 | Süresi dolan OTP/oturum, 90 günden eski PlayLog (günlük özete indir), silinen hesapları anonimleştir |
 
-Sessiz saatler (varsayılan 01:00–10:00) ve kullanıcı tercihleri tüm push işlerinde uygulanır.
+Sessiz saatler (varsayılan 01:00–10:00) ve kullanıcı tercihleri tüm push işlerinde uygulanır: sessiz saatte push
+ertelenir; "şu an radyoda" ertelenince anlamsızlaştığı için yalnız bildirim kutusuna düşer. Tercih kapalıysa bildirim hiç üretilmez.
 
 ## 6. Öneri ve sıralama (MVP: kural tabanlı)
 
@@ -505,7 +511,8 @@ Tekilleştirme: `(normalize(title), venueId, startsAt ± 2 saat)` aynıysa aynı
 
 ## 8. Güvenlik ve uyum
 
-- **Rate limit** (`@nestjs/throttler` + Redis): genel 120 istek/dk/IP; OTP 5/saat/e-posta; `discover/now` 30/dk/IP; submissions 5/saat/IP.
+- **Rate limit** (`@nestjs/throttler`, bellek içi — tek API süreci): genel 120 istek/dk/IP; giriş uçları 10/dk/IP;
+  OTP ayrıca 60 sn'de 1 ve saatte 5/e-posta (DB'den); `discover/now` 30/dk/IP ve submissions 5/saat/IP (sonra).
 - **Doğrulama:** class-validator `whitelist + forbidNonWhitelisted`; tüm slug/ID parametreleri doğrulanır.
 - **Yetki:** admin uçlarında açık `@Roles()`; rol atama yalnız SUPERADMIN; admin girişi e-posta OTP + (sonra) TOTP.
 - **SSRF:** now-playing ve istasyon testinde iç ağ adresleri engelli (mevcut), yanıt boyutu ve süresi sınırlı.
@@ -524,7 +531,7 @@ Tekilleştirme: `(normalize(title), venueId, startsAt ± 2 saat)` aynıysa aynı
 
 ## 9. Gözlemlenebilirlik
 
-- `/health` (canlılık) ve `/health/deep` (DB + Redis + kuyruk gecikmesi).
+- `/health` (canlılık) ve `/health/deep` (DB + en eski bekleyen push'un yaşı).
 - Metrikler (admin dashboard'da): DAU, çalma oturumu, **eşleşme oranı** (eşleşen parça / metadata'lı parça),
   **köprü tıklama oranı** (discover kartı tıklaması / çalma oturumu), takip/kaydet sayıları, bilet çıkış tıklamaları,
   kırık istasyon sayısı, bekleyen başvurular.

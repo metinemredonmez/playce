@@ -16,7 +16,9 @@ Luca'dan (lucaevent) **bağımsız** bir projedir; kendi backend'i vardır.
 - Ses profili / eşleşme % / müzik hesabı bağlama → `08-zevk-eslesme.md`
 
 ## Stack
-- `apps/api` NestJS 10 + Prisma 5 + Postgres (port 3030, Swagger `/docs`)
+- `apps/api` NestJS 11 + Prisma 5 + Postgres (port 3030, tüm uçlar `/v1`, Swagger `/docs`)
+  - İki giriş: `main.ts` (HTTP) ve `worker.ts` (zamanlanmış işler, `src/jobs/jobs.service.ts`)
+  - Nest 12 ESM-only; geçiş ayrı iş (ADR-021). `jose` 5'te kalır (6 ESM-only).
 - `apps/mobile` Expo SDK 58 + Expo Router (src/app), NativeTabs, expo-audio
 - Node 22 (`.nvmrc`). Expo 58, Node 20'de uyarı verir.
 
@@ -26,8 +28,12 @@ Luca'dan (lucaevent) **bağımsız** bir projedir; kendi backend'i vardır.
 3. **İstanbul saati sabit UTC+3.** "Bu gece" sabah 06:00'ya kadar sürer (`apps/api/src/common/time.ts`,
    mobilde `src/lib/format.ts` aynı mantık). Intl/timeZone'a güvenme.
 4. **Yalnız HTTPS yayın** (iOS ATS). HLS yayınlarda `hasMetadata=false`.
-5. **/admin/* uçları `AdminKeyGuard` ile korunur** (`X-Admin-Key`).
+5. **Uçlar varsayılan olarak giriş ister** (global `AuthGuard`). Herkese açık uç → `@Public()`;
+   admin uçları → `@Roles('EDITOR')` vb. (geçiş dönemi için `X-Admin-Key` de kabul edilir). Kullanıcı → `@CurrentUser()`.
 6. **DEMO veri** `source=DEMO` taşır ve uygulamada rozetle gösterilir; gerçek veriyle karışmasın.
+7. **Bildirim yalnız `NotificationsService.notify()` ile üretilir** — tercih, sessiz saat ve `dedupeKey` orada uygulanır.
+   Push'u worker gönderir (DB outbox, ADR-020); API'den doğrudan Expo çağrılmaz.
+8. **Env** `src/config/env.ts` (zod) ile doğrulanır; yeni değişkeni oraya ve `.env.example`'a ekle.
 
 ## Mobil notları
 - Expo API'leri her SDK'da değişir: kod yazmadan önce `https://docs.expo.dev/versions/v58.0.0/` oku
@@ -38,7 +44,10 @@ Luca'dan (lucaevent) **bağımsız** bir projedir; kendi backend'i vardır.
 - `Link asChild` Pressable'ın fonksiyon stillerini uygulamıyor → kart bağlantıları için `PressLink`.
 
 ## Komutlar
-`pnpm dev:api` · `pnpm ios` · `pnpm db:create` · `pnpm db:migrate` · `pnpm db:seed` · `pnpm db:studio` · `pnpm typecheck`
+`pnpm dev:api` · `pnpm dev:worker` · `pnpm ios` · `pnpm db:create` · `pnpm db:migrate` · `pnpm db:seed` · `pnpm db:studio` · `pnpm typecheck` · `pnpm test:api`
+
+e2e testleri `apps/api/test/` altında, ayrı `<db>_test` veritabanında koşar (her çalıştırmada sıfırlanır).
+E-posta, Expo Push, radyo okuma ve Apple/Google anahtarları sahteyle değiştirilir (`test/utils.ts`).
 
 Yeni migration (headless, `migrate dev` TTY ister):
 `npx prisma migrate diff --from-url $DATABASE_URL --to-schema-datamodel prisma/schema.prisma --script > prisma/migrations/<ts>_name/migration.sql` → `pnpm db:migrate`.

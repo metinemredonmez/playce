@@ -17,25 +17,26 @@
 | 11+ | **7 · Büyüme** | Mekân paneli, sponsorlu slotlar, sosyal, bilet satışı, yeni şehirler |
 
 ## Faz 1 — Backend temeli (Hafta 1–2)
-- [ ] `config` modülü: zod ile env doğrulama; `.env.example` güncel.
-- [ ] `auth`: e-posta OTP (Mailpit/SMTP), Apple, Google; JWT access/refresh rotasyonu; `@Public`, `@CurrentUser`, `JwtGuard`, `RolesGuard`.
-- [ ] `users`: profil, zevk türleri, `Consent` kayıtları, hesap silme (soft + 30 gün anonimleştirme işi), veri dışa aktarma.
-- [ ] `social`: `ArtistFollow`, `VenueFollow`, `SavedEvent`, `FavoriteStation` (idempotent PUT/DELETE) + cihazdan birleştirme ucu.
-- [ ] `notifications`: push token, bildirim kutusu, tercihler, Expo Push gönderici, makbuz işi.
-- [ ] `playlog`: poller işi (BullMQ), `PlayLog`, `UnmatchedArtist`, sanatçı "radyoda çaldı" bildirimi.
+- [x] Bağımlılık açıkları: NestJS 11, 36 → 2 (kalan ikisi geliştirme aracında, yaması yok — ADR-021).
+- [x] `config` modülü: zod ile env doğrulama; `.env.example` güncel.
+- [x] `auth`: e-posta OTP (SMTP; geliştirmede konsol), Apple, Google; JWT access/refresh rotasyonu; `@Public`, `@CurrentUser`, `AuthGuard`, `RolesGuard` (ADR-022).
+- [x] `users`: profil, zevk türleri, `Consent` kayıtları, hesap silme (soft + 30 gün anonimleştirme işi), veri dışa aktarma.
+- [x] `social`: `ArtistFollow`, `VenueFollow`, `SavedEvent`, `FavoriteStation` (idempotent PUT/DELETE) + cihazdan birleştirme ucu.
+- [x] `notifications`: push token, bildirim kutusu, tercihler, Expo Push gönderici, makbuz işi, fan-out, hatırlatma (DB outbox, ADR-020).
+- [x] `playlog`: poller işi (worker), `PlayLog`, `UnmatchedArtist` + admin kuyruğu, sanatçı "radyoda çaldı" bildirimi.
 - [ ] `stations`: sağlık işi, `status` alanları; uygulama `DOWN` olanları görmez.
 - [ ] `search`: `pg_trgm` + normalize edilmiş `searchText` sütunları; `/v1/search`.
 - [ ] `events`: `REVIEW` durumu, `isFree/ageLimit/doorsAt/ticketProvider`, `/ics`, cursor sayfalama, `near`/`district`/`priceMax` filtreleri.
 - [ ] `venues`: `VenueHours`, "şimdi açık", Google Place alanları, `Media`.
-- [ ] `admin`: `X-Admin-Key` → JWT + roller; `AuditLog` interceptor'ı.
-- [ ] `/v1` öneki; eski uçlar bir sürüm boyunca yönlendirme.
+- [ ] `admin`: ~~`X-Admin-Key` → JWT + roller~~ ✅ (key geçiş dönemi için duruyor); `AuditLog` interceptor'ı.
+- [x] `/v1` öneki (yayında eski sürüm olmadığı için yönlendirme gerekmedi; mobil güncellendi).
 - [ ] Seed'i ikiye böl: `seed:base` (tür + istasyon, prod) / `seed:demo` (yalnız geliştirme).
 - [ ] Yerel türler (ADR-016): Türkçe Rap, Arabesk & Fantezi, Anadolu Rock, Fasıl & Türk Sanat; `TagGenreMap` ilk sürümü.
 - [ ] `radio`: Karnaval istasyonları için Triton now-playing XML (sanatçı, parça, kapak); ICY'ye düşme.
 - [ ] Güven alanları (`sellerName`, `refundPolicy`, `doorPolicy`, `dressCode`) ve alkol anahtar kelime denetimi → `REVIEW` (ADR-015).
 - [ ] `ingest:etkinlikio` (token gelince) ve Ticketmaster `countryCode=TR` deneme betiği.
-- [ ] **Yayın:** VPS'te Postgres kullanıcı/DB, Redis, `playce-api` + `playce-worker` (pm2), nginx + certbot (`api.<alan-adı>`), gece `pg_dump`, Sentry.
-- [ ] e2e: auth, takip/kaydet, discover, events filtreleri, admin yayınla → fan-out.
+- [ ] **Yayın:** VPS'te Postgres kullanıcı/DB, `playce-api` + `playce-worker` (pm2), nginx + certbot (`api.<alan-adı>`), gece `pg_dump`, Sentry.
+- [ ] e2e: ~~auth, takip/kaydet, admin yayınla → fan-out, bildirim, PlayLog~~ ✅ (43 test); discover ve events filtreleri kaldı.
 
 ## Faz 2 — Admin paneli (Hafta 3–4)
 - [ ] `apps/admin` Next.js 15 + shadcn iskeleti, OTP girişi, rol bazlı menü.
