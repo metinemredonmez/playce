@@ -50,6 +50,16 @@ describe('auth', () => {
       await ctx.http().post('/v1/auth/otp/verify').send({ email, code }).expect(400);
     });
 
+    it("SMTP yoksa (production) e-posta ile giriş 503, kod üretilmez", async () => {
+      ctx.mail.enabled = false;
+      try {
+        await ctx.http().post('/v1/auth/otp/request').send({ email: 'd@ornek.com' }).expect(503);
+        expect(await ctx.prisma.otpCode.count({ where: { email: 'd@ornek.com' } })).toBe(0);
+      } finally {
+        ctx.mail.enabled = true;
+      }
+    });
+
     it('kod tek kullanımlık', async () => {
       const email = 'c@ornek.com';
       await ctx.http().post('/v1/auth/otp/request').send({ email }).expect(200);

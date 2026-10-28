@@ -15,6 +15,7 @@ export const ADMIN_KEY = process.env.ADMIN_KEY!;
 
 /** Gönderilen giriş kodlarını yakalar. */
 export class MailStub {
+  enabled = true;
   codes = new Map<string, string>();
   async sendOtp(email: string, code: string) {
     this.codes.set(email, code);

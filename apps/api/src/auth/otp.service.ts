@@ -1,4 +1,4 @@
-import { BadRequestException, HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { BadRequestException, HttpException, HttpStatus, Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createHmac, randomInt, timingSafeEqual } from 'crypto';
 import { Env } from '../config/env';
@@ -24,6 +24,7 @@ export class OtpService {
   }
 
   async request(email: string) {
+    if (!this.mail.enabled) throw new ServiceUnavailableException('E-posta ile giriş henüz açık değil');
     const now = Date.now();
     const recent = await this.prisma.otpCode.findMany({
       where: { email, createdAt: { gte: new Date(now - 60 * 60_000) } },

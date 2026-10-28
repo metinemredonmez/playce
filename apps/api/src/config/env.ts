@@ -28,7 +28,7 @@ const schema = z
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV !== 'production') return;
-    if (!env.SMTP_URL) ctx.addIssue({ code: 'custom', path: ['SMTP_URL'], message: "production'da zorunlu" });
+    // SMTP_URL yoksa API açılır ama e-posta ile giriş 503 döner (MailService.enabled).
     if (env.ADMIN_KEY && env.ADMIN_KEY.length < 32)
       ctx.addIssue({ code: 'custom', path: ['ADMIN_KEY'], message: "production'da en az 32 karakter" });
   });

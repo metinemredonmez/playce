@@ -17,7 +17,8 @@ async function bootstrap() {
   SwaggerModule.setup('docs', app, SwaggerModule.createDocument(app, doc));
 
   const port = Number(process.env.PORT) || 3030;
-  await app.listen(port, '0.0.0.0');
+  // Geliştirmede telefondaki Expo Go ulaşsın diye tüm arayüzler; production'da yalnız nginx arkasından.
+  await app.listen(port, process.env.NODE_ENV === 'production' ? '127.0.0.1' : '0.0.0.0');
   console.log(`Playce API → http://localhost:${port}/v1 (Swagger: /docs)`);
 }
 bootstrap();
