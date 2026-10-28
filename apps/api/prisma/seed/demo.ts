@@ -37,6 +37,23 @@ const VENUES: {
   { slug: 'crr', name: 'Cemal Reşit Rey Konser Salonu', district: 'Şişli', genres: ['fasil', 'jazz'], lat: 41.0463, lng: 28.9899, priceLevel: 2, description: 'Harbiye’de Türk sanat müziği ve caz konserleri.' },
 ];
 
+// Demo çalışma saatleri ve güven alanları (yalnız kulüp/bar; konser salonlarının saati etkinliğe bağlı).
+// Saat: [günler (0 = Pazar), açılış, kapanış] — kapanış açılıştan küçükse ertesi gün.
+const VENUE_EXTRA: Record<
+  string,
+  { hours: [days: number[], opens: string, closes: string][]; ageLimit?: number; doorPolicy?: string; dressCode?: string }
+> = {
+  blind: { hours: [[[4, 5, 6], '23:00', '06:00']], ageLimit: 18, doorPolicy: 'Seçici kapı, kimlik zorunlu' },
+  arkaoda: { hours: [[[0, 1, 2, 3, 4], '18:00', '02:00'], [[5, 6], '18:00', '05:00']], ageLimit: 18, doorPolicy: 'Kimlik zorunlu' },
+  'nardis-jazz': { hours: [[[1, 2, 3, 4, 5, 6], '20:00', '01:00']] },
+  'munzur-bar': { hours: [[[0, 1, 2, 3, 4, 5, 6], '19:00', '03:00']], ageLimit: 18 },
+  '360-istanbul': { hours: [[[0, 1, 2, 3, 4, 5, 6], '18:00', '02:00']], dressCode: 'Şık; şort ve terlik kabul edilmez' },
+  anjelique: { hours: [[[2, 3, 4, 5, 6], '19:00', '04:00']], ageLimit: 18, dressCode: 'Şık giyim', doorPolicy: 'Rezervasyonlu girişe öncelik' },
+  'babylon-bomonti': { hours: [[[3, 4, 5, 6], '20:00', '04:00']] },
+  'salon-iksv': { hours: [[[2, 3, 4, 5, 6], '19:00', '00:00']] },
+  'moda-sahnesi': { hours: [[[0, 2, 3, 4, 5, 6], '19:00', '23:30']] },
+};
+
 const ARTISTS: { name: string; genres: string[]; aliases?: string[] }[] = [
   // Türkçe pop
   { name: 'Tarkan', genres: ['turkce-pop'] },
@@ -181,12 +198,18 @@ export async function seedDemo(prisma: PrismaClient, genreId: Map<string, string
   const venueId = new Map<string, string>();
   for (const { genres: gs, ...v } of VENUES) {
     const genres = gs.map((g) => ({ id: genreId.get(g)! }));
+    const { hours = [], ...extra } = VENUE_EXTRA[v.slug] ?? {};
+    const data = { ...v, ageLimit: null, doorPolicy: null, dressCode: null, ...extra, source: 'DEMO' as const };
     const row = await prisma.venue.upsert({
       where: { slug: v.slug },
-      update: { ...v, source: 'DEMO', genres: { set: genres } },
-      create: { ...v, source: 'DEMO', genres: { connect: genres } },
+      update: { ...data, genres: { set: genres } },
+      create: { ...data, genres: { connect: genres } },
     });
     venueId.set(v.slug, row.id);
+    await prisma.venueHours.deleteMany({ where: { venueId: row.id } });
+    await prisma.venueHours.createMany({
+      data: hours.flatMap(([days, opensAt, closesAt]) => days.map((weekday) => ({ venueId: row.id, weekday, opensAt, closesAt }))),
+    });
   }
 
   await prisma.event.deleteMany({ where: { source: 'DEMO' } });
@@ -201,6 +224,8 @@ export async function seedDemo(prisma: PrismaClient, genreId: Map<string, string
         endsAt: new Date(startsAt.getTime() + (e.hours ?? 4) * 3600_000),
         priceFrom: e.price === undefined ? null : e.price * 100,
         isFree: e.price === 0,
+        // Güven alanları (M17) — demo metinleri
+        ...(e.price ? { totalPriceNote: 'Hizmet bedeli dahil', refundPolicy: 'Etkinlik iptal edilirse tam iade; kişisel nedenle iade yok.' } : {}),
         // Kulüp geceleri 18+ (ADR-015)
         ageLimit: e.time >= '23:00' ? 18 : null,
         source: 'DEMO',

@@ -4,13 +4,19 @@ import { eventCard, flattenEvent, genreCard } from '../common/selects';
 import { windowFor } from '../common/time';
 import { liveEventWhere } from '../events/events.service';
 import { districtNames } from './districts';
+import { openStatus, weekFromMonday } from './hours';
+
+const hoursSelect = { select: { weekday: true, opensAt: true, closesAt: true } } as const;
 
 @Injectable()
 export class VenuesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /** Mekân listesi — bu gece etkinliği olanlar önce, sonra sıradaki etkinlik tarihine göre. */
-  async list(q: { genre?: string; district?: string }) {
+  /**
+   * Mekân listesi — bu gece etkinliği olanlar önce, sonra şu an açık olanlar, sonra sıradaki etkinlik tarihine göre.
+   * openNow=true: yalnız şu an açık olanlar (saati girilmemiş mekânlar elenir).
+   */
+  async list(q: { genre?: string; district?: string; openNow?: boolean }) {
     const now = new Date();
     const rows = await this.prisma.venue.findMany({
       where: {
@@ -23,8 +29,10 @@ export class VenuesService {
         district: true,
         coverUrl: true,
         priceLevel: true,
+        ageLimit: true,
         source: true,
         genres: genreCard,
+        hours: hoursSelect,
         events: {
           where: liveEventWhere(now),
           orderBy: { startsAt: 'asc' },
@@ -35,12 +43,15 @@ export class VenuesService {
     });
 
     const tonightEnd = windowFor('tonight', now).to!.getTime();
-    const venues = rows.map(({ events, ...v }) => {
-      const next = events[0] ?? null;
-      return { ...v, nextEvent: next, tonight: !!next && next.startsAt.getTime() < tonightEnd };
-    });
+    const venues = rows
+      .map(({ events, hours, ...v }) => {
+        const next = events[0] ?? null;
+        return { ...v, ...openStatus(hours, now), nextEvent: next, tonight: !!next && next.startsAt.getTime() < tonightEnd };
+      })
+      .filter((v) => !q.openNow || v.openNow);
     return venues.sort((a, b) => {
       if (a.tonight !== b.tonight) return a.tonight ? -1 : 1;
+      if (!!a.openNow !== !!b.openNow) return a.openNow ? -1 : 1;
       const at = a.nextEvent?.startsAt.getTime() ?? Infinity;
       const bt = b.nextEvent?.startsAt.getTime() ?? Infinity;
       return at - bt || a.name.localeCompare(b.name, 'tr');
@@ -68,12 +79,16 @@ export class VenuesService {
           take: 20,
           select: eventCard,
         },
+        hours: hoursSelect,
       },
     });
     if (!v) throw new NotFoundException('Mekân bulunamadı');
     const sound = v.genres.find((g) => g.stations.length)?.stations[0] ?? null;
+    const { searchText: _st, ...venue } = v;
     return {
-      ...v,
+      ...venue,
+      ...openStatus(v.hours, now),
+      hours: weekFromMonday(v.hours),
       genres: v.genres.map(({ stations: _s, ...g }) => g),
       events: v.events.map(flattenEvent),
       sound: sound && {

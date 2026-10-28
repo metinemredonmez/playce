@@ -128,17 +128,36 @@ model Venue {
   /// 1-4 arası fiyat seviyesi (₺ … ₺₺₺₺)
   priceLevel  Int?
   source      DataSource @default(ADMIN)
+  /// 18 = gece kulübü; etkinlikte ageLimit yoksa bu geçerli (ADR-015)
+  ageLimit    Int?
+  /// Güven alanları (M17): "Seçici kapı, kimlik zorunlu" / "Spor ayakkabı kabul"
+  doorPolicy  String?
+  dressCode   String?
   /// ad + semt, normalize — DB tetikleyicisi doldurur
   searchText  String     @default("")
 
   genres  Genre[]
   events  Event[]
   follows VenueFollow[]
+  hours   VenueHours[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([searchText(ops: raw("gin_trgm_ops"))], type: Gin)
+}
+
+/// Haftalık çalışma saati, gün başına bir aralık. Kapanış açılıştan küçük/eşitse ertesi güne taşar ("23:00"–"05:00").
+model VenueHours {
+  venueId  String
+  /// 0 = Pazar … 6 = Cumartesi
+  weekday  Int
+  /// "HH:MM", İstanbul saati
+  opensAt  String
+  closesAt String
+  venue    Venue  @relation(fields: [venueId], references: [id], onDelete: Cascade)
+
+  @@id([venueId, weekday])
 }
 
 model Artist {
@@ -183,6 +202,10 @@ model Event {
   ticketUrl      String?
   /// Bilet linkinin satıcısı ("Biletix'ten al"); boşsa ticketUrl'den çıkarılır
   ticketProvider ExternalSource?
+  /// Güven alanları (M17): satıcı/organizatör, toplam fiyat notu ("Hizmet bedeli dahil"), iade koşulu
+  sellerName     String?
+  totalPriceNote String?
+  refundPolicy   String?
   status         EventStatus     @default(PUBLISHED)
   source         DataSource      @default(ADMIN)
   /// başlık, normalize — DB tetikleyicisi doldurur

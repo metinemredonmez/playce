@@ -170,3 +170,10 @@ export async function login(ctx: TestContext, email: string) {
 }
 
 export const bearer = (token: string) => ({ Authorization: `Bearer ${token}` });
+
+/** Giriş yapar ve kullanıcıya rol verir (rol her istekte DB'den okunur). */
+export async function loginAs(ctx: TestContext, email: string, role: 'USER' | 'EDITOR' | 'MODERATOR' | 'ADMIN') {
+  const t = await login(ctx, email);
+  await ctx.prisma.user.update({ where: { id: t.user.id }, data: { role } });
+  return { id: t.user.id, auth: bearer(t.accessToken) };
+}

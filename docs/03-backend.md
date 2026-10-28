@@ -3,7 +3,7 @@
 > Durum (28 Eki 2026): Faz 1 kodu büyük ölçüde bitti — kimlik, kullanıcı, takip/kaydet, bildirim, PlayLog, arama,
 > istasyon sağlığı, etkinlik filtreleri, AuditLog ve yerel türler çalışıyor; 70 e2e testi geçiyor.
 > VPS'te yayında (geçici IP adresi, HTTPS alan adını bekliyor): [09-yayin.md](09-yayin.md).
-> Kalanlar (HTTPS, mekân saatleri, Triton, güven alanları): [06-yol-haritasi.md](06-yol-haritasi.md) Faz 1 listesi.
+> Kalanlar (HTTPS, dış kaynaktan içe aktarma): [06-yol-haritasi.md](06-yol-haritasi.md) Faz 1 listesi.
 > Bu doküman MVP'ye (İstanbul lansmanı) kadar backend'in **hedef halini** tanımlar.
 > Kapsam ve öncelik: [02-mvp-kapsam.md](02-mvp-kapsam.md). Kararlar: [07-kararlar.md](07-kararlar.md).
 
@@ -49,10 +49,10 @@
 | `users` | Profil, şehir, zevk (türler), KVKK onayları, hesap silme/dışa aktarma | ✅ |
 | `genres` | 14 tür (yerel türler önce, ADR-016), renk, radioTag, `TagGenreMap` | ✅ |
 | `stations` | Küratörlü istasyon + radio-browser araması, saatlik sağlık işi | ✅ |
-| `radio` | ICY okuma, parça ayrıştırma, SSRF koruması | var |
+| `radio` | Şu an çalan: Triton (StreamTheWorld, kapaklı) > ICY; parça ayrıştırma, SSRF koruması, yayın sağlık yoklaması | ✅ |
 | `playlog` | Çalan parça kaydı, eşleşmeyen sanatçı kuyruğu, "radyoda çaldı" bildirimi | ✅ (istatistik uçları Faz 2) |
 | `artists` | Sanatçı, alias, eşleştirme indeksi, dış kimlikler, birleştirme | var → genişlet |
-| `venues` | Mekân, çalışma saatleri, fotoğraf, Google Place bağı, "mekânın sesi" | var → genişlet |
+| `venues` | Mekân, çalışma saatleri + "şimdi açık", güven alanları, "mekânın sesi"; fotoğraf ve Google Place Faz 2 | ✅ (kısmen) |
 | `events` | Etkinlik, lineup, REVIEW durumu, bilet satıcısı, filtreler + cursor, `.ics` | ✅ (seri yok) |
 | `discover` | `/discover/now` köprüsü, ana sayfa akışı, öneri skoru | var → genişlet |
 | `search` | Sanatçı/mekân/etkinlik/istasyon birleşik arama (pg_trgm, ADR-023) | ✅ |
@@ -397,13 +397,13 @@ Liste uçları **cursor** sayfalama: `?cursor=<id>&limit=20` → `{ items, nextC
 | `GET /v1/genres` | 🔓 | Türler + istasyon/mekân sayısı |
 | `GET /v1/genres/:slug/stations?more=1` | 🔓 | Küratörlü + radio-browser |
 | `GET /v1/stations/search?q&tag&country` | 🔓 | radio-browser araması (10 dk cache) |
-| `GET /v1/radio/now-playing?url=` | 🔓 | ICY başlığı → `{raw, artist, title}` |
+| `GET /v1/radio/now-playing?url=` | 🔓 | ✅ `{raw, artist, title, cover}` — StreamTheWorld'de Triton (kapaklı), diğerlerinde ICY |
 | `GET /v1/discover/now?url&genre` | 🔓 | Çalan parça + sanatçı eşleşmesi + konserleri + türün bu geceki etkinlikleri + mekânlar |
 | `GET /v1/events?when&from&to&genre&venue&artist&district&free&priceMax&near&radiusKm&sort&cursor&limit` | 🔓 | ✅ `{items, nextCursor}`. `when`: tonight/tomorrow/weekend/upcoming; `from/to`: İstanbul günü ya da ISO; `priceMax` kuruş; `near=lat,lng` → `distanceKm`; `sort`: soonest/nearest (popular sonra) |
 | `GET /v1/events/:slug` | 🔓 | Detay + lineup + mekân + benzer etkinlikler |
 | `GET /v1/events/:slug/ics` | 🔓 | ✅ Takvime ekle dosyası (iptalde `STATUS:CANCELLED`) |
-| `GET /v1/venues?genre&district&openNow&near&cursor` | 🔓 | Bu gece açık olanlar önce |
-| `GET /v1/venues/:slug` | 🔓 | Detay + saatler + fotoğraflar + program + "mekânın sesi" |
+| `GET /v1/venues?genre&district&openNow&near&cursor` | 🔓 | Bu gece etkinliği olanlar, sonra şu an açık olanlar önce; her kartta `openNow`/`openUntil` (✅ genre, district, openNow; near/cursor sonra) |
+| `GET /v1/venues/:slug` | 🔓 | Detay + saatler (Pazartesiden) + `openNow`/`openUntil` + yaş/kapı/kıyafet kuralı + program + "mekânın sesi" (fotoğraflar sonra) |
 | `GET /v1/artists/:slug` | 🔓 | Detay + konserler + `onRadio` (son 7 günde çaldığı istasyonlar, PlayLog) |
 | `GET /v1/stations/:slug/plays?limit` | 🔓 | İstasyonda son çalanlar (eşleşen sanatçıyla) |
 | `GET /v1/search?q` | 🔓 | ✅ `{ artists, venues, events, stations }` — Türkçe karakter ve küçük yazım hatası duyarsız; etkinlikte lineup da aranır |
@@ -444,8 +444,8 @@ Liste uçları **cursor** sayfalama: `?cursor=<id>&limit=20` → `{ items, nextC
 | Grup | Uçlar | Rol |
 |---|---|---|
 | Dashboard | `GET stats/overview`, `GET stats/plays?range`, `GET stats/funnel` | EDITOR+ |
-| Etkinlik | `GET/POST events`, `GET/PATCH/DELETE events/:id`, `POST events/:id/{publish,unpublish,cancel,duplicate}`, `POST events/bulk` | EDITOR+ |
-| Mekân | CRUD + `POST venues/:id/hours`, `GET places/search?q` (Google Places), `POST venues/:id/import-place` | EDITOR+ |
+| Etkinlik | `GET events?status` ✅ (moderasyon kuyruğu, alkol bayraklarıyla), `POST/PATCH/DELETE events/:slug` ✅, `POST events/:id/{publish,unpublish,cancel,duplicate}`, `POST events/bulk` | EDITOR+ (`allowFlagged`: MODERATOR+) |
+| Mekân | CRUD ✅ + `PUT venues/:slug/hours` ✅, `GET places/search?q` (Google Places), `POST venues/:id/import-place` | EDITOR+ |
 | Sanatçı | CRUD + `POST artists/:id/merge {intoId}`, `POST artists/:id/aliases`, `GET artists/lookup?q` (MusicBrainz) | EDITOR+ |
 | Eşleşmeyenler | `GET unmatched?status&sort=plays`, `POST unmatched/:key/{link,create,ignore}` | EDITOR+ |
 | İstasyon | CRUD + `POST stations/:slug/test` (bağlan + ICY oku) ✅, `GET stations/health` ✅ | EDITOR+ |

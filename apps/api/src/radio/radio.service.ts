@@ -1,13 +1,17 @@
 import { Injectable } from '@nestjs/common';
 
-export type Track = { raw: string | null; artist: string | null; title: string | null };
+/** cover: albüm kapağı (yalnız Triton verir) */
+export type Track = { raw: string | null; artist: string | null; title: string | null; cover?: string | null };
 
 /** Yayın sağlık kontrolü sonucu. codec: "audio/mpeg", "audio/aacp", "hls"… */
 export type StreamProbe = { ok: boolean; codec: string | null; bitrate: number | null; icy: boolean; error: string | null };
 
-// Canlı yayında "şu an çalan" (ICY StreamTitle). Uygulama yayının içindeki metadata'yı
-// okuyamıyor; burada Icy-MetaData:1 ile bağlanıp ilk metadata bloğunu ayrıştırıyoruz.
-// Kısa cache + basit SSRF koruması. (Luca radyo servisinden uyarlandı.)
+// Canlı yayında "şu an çalan". İki kaynak:
+// 1) Triton now-playing XML — StreamTheWorld yayınları (Karnaval: Süper, Metro, Joy, JoyTürk, Virgin):
+//    sanatçı ve parça ayrı alanlarda, albüm kapağıyla. Varsa tercih edilir.
+// 2) ICY StreamTitle — uygulama yayının içindeki metadata'yı okuyamıyor; burada Icy-MetaData:1 ile
+//    bağlanıp ilk metadata bloğunu ayrıştırıyoruz. (Luca radyo servisinden uyarlandı.)
+// Kısa cache + basit SSRF koruması.
 @Injectable()
 export class RadioService {
   private readonly cache = new Map<string, { track: Track; at: number }>();
@@ -37,8 +41,9 @@ export class RadioService {
     const hit = this.cache.get(rawUrl);
     if (hit && Date.now() - hit.at < this.TTL) return hit.track;
 
-    const raw = await this.readIcyTitle(rawUrl).catch(() => null);
-    const track = parseTrack(raw);
+    const mount = tritonMount(rawUrl);
+    const triton = mount ? await this.readTriton(mount).catch(() => null) : null;
+    const track = triton ?? { ...parseTrack(await this.readIcyTitle(rawUrl).catch(() => null)), cover: null };
     this.cache.set(rawUrl, { track, at: Date.now() });
     if (this.cache.size > 500) this.cache.delete(this.cache.keys().next().value as string);
     return track;
@@ -87,6 +92,14 @@ export class RadioService {
     } catch (e) {
       return fail((e as Error).name === 'TimeoutError' ? 'Zaman aşımı' : (e as Error).message.slice(0, 200));
     }
+  }
+
+  private async readTriton(mount: string): Promise<Track | null> {
+    const res = await fetch(`${TRITON_NP}?mountName=${encodeURIComponent(mount)}&eventType=track&numberToFetch=1`, {
+      headers: { 'User-Agent': 'Playce/0.1' },
+      signal: AbortSignal.timeout(4000),
+    });
+    return res.ok ? parseTriton(await res.text()) : null;
   }
 
   private async readIcyTitle(url: string): Promise<string | null> {
@@ -145,6 +158,43 @@ export class RadioService {
 
 // Reklam / jingle / istasyon adı gibi parça olmayan başlıklar.
 const NOT_A_TRACK = /^(reklam|advert|commercial|jingle|haber|news|spot)\b|^\s*-\s*$/i;
+
+const TRITON_NP = 'https://np.tritondigital.com/public/nowplaying';
+/** Parça süresi bittikten bu kadar sonra bilgi eski sayılır (araya reklam/program girmiş olabilir) → ICY'ye düş. */
+const TRITON_STALE_MS = 2 * 60_000;
+
+/**
+ * StreamTheWorld yayın adresinden Triton mount adı:
+ * …/livestream-redirect/SUPER_FM.mp3 → SUPER_FM, …live.streamtheworld.com/METRO_FMAAC.aac → METRO_FMAAC.
+ * Uzantı olmayabilir. "_SC" ekli adlar now-playing'de boş döner, ek atılır. StreamTheWorld değilse null.
+ */
+export function tritonMount(rawUrl: string): string | null {
+  try {
+    const url = new URL(rawUrl);
+    if (!/(^|\.)streamtheworld\.com$/i.test(url.hostname)) return null;
+    const m = url.pathname.match(/\/([A-Z0-9_]+)(?:\.(?:mp3|aac))?$/i);
+    return m ? m[1].toUpperCase().replace(/_SC$/, '') : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Triton now-playing XML'i → Track. Parça yoksa, eskiyse ya da reklamsa null. */
+export function parseTriton(xml: string, now = Date.now()): Track | null {
+  const prop = (name: string) =>
+    xml.match(new RegExp(`<property name="${name}"><!\\[CDATA\\[([\\s\\S]*?)\\]\\]></property>`))?.[1].trim() || null;
+  const artist = prop('track_artist_name');
+  const title = prop('cue_title');
+  if (!artist || !title) return null;
+  const start = Number(prop('cue_time_start'));
+  const duration = Number(prop('cue_time_duration'));
+  if (start > 0 && duration > 0 && now > start + duration + TRITON_STALE_MS) return null;
+  const raw = `${artist} - ${title}`;
+  if (NOT_A_TRACK.test(raw)) return null;
+  const cover = prop('track_cover_url');
+  // İstasyonun varsayılan görseli albüm kapağı değil
+  return { raw, artist, title, cover: cover && !cover.includes('/default_images/') ? cover : null };
+}
 
 /** "Sanatçı - Parça" başlığını ayırır. Ayrılamazsa yalnız raw döner. */
 export function parseTrack(raw: string | null): Track {

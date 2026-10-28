@@ -72,6 +72,13 @@ Her önemli karar burada: bağlam → karar → sonuç. Yeni karar en alta, numa
   - Görseller admin onayından geçer.
   - Gece hayatı içeriği 18+ kapısının arkasındadır.
 - **Sonuç:** Sponsorlu öne çıkarma gelirinde alkol markaları müşteri olamaz. Hukuk görüşü alınana kadar katı yorum uygulanır.
+- **Uygulama (Faz 1, 28 Eki 2026):** `src/moderation/alcohol.ts` — normalize edilmiş metinde promosyon ("happy hour",
+  "1 alana 1", bedava/sınırsız/indirimli içki, açık bar, hoş geldin içkisi), alkol markası ve içki temalı gece
+  ("rakı balık", bira festivali) aranır. Tür bilgisi ("kokteyl bar") serbest.
+  - İşaretli etkinlik yayına çıkmaz, `REVIEW`'da bekler (`GET /v1/admin/events?status=REVIEW`); metin düzelince yayınlanır.
+  - Mekânın durumu olmadığı için işaretli mekân metni kaydedilmez (400).
+  - MODERATOR+ yanlış alarmı `allowFlagged: true` ile geçirir; istek AuditLog'a düşer. Onaylı içerik, metne dokunulmadıkça yeniden denetlenmez.
+  - Görsel onayı ve 18+ kapısı (kullanıcının yaşına göre gizleme) Faz 2/4'te; `ageLimit` alanları hazır (etkinlikte yoksa mekânınki).
 
 ## ADR-016 · Yerel tür taksonomisi
 - **Bağlam:** Spotify 2025 Türkiye ilk 100'ünün 98'i yerli. Türkçe rap, arabesk, Anadolu rock, türkü bar ve fasıl global taksonomilerde kayboluyor.
@@ -149,3 +156,12 @@ Her önemli karar burada: bağlam → karar → sonuç. Yeni karar en alta, numa
   - Eşleşme: tam önek, kelime öneki ya da (4+ harfte) `word_similarity ≥ 0.4`. Eşik işlem içinde `set_config` ile verilir.
 - **Sonuç:** Ek servis yok. `pg_trgm` ve `unaccent` PG13+'da "trusted" eklenti; DB sahibi kullanıcı migration'da kurabilir
   (VPS kurulumunda kontrol et). Ölçek büyürse (100 bin+ satır, çok dilli) ayrı arama servisi yeniden değerlendirilir.
+
+## ADR-024 · "Şu an çalan": Triton > ICY
+- **Bağlam:** Karnaval istasyonları (Süper, Metro, Joy, JoyTürk, Virgin) StreamTheWorld/Triton üzerinde. Triton'un herkese açık
+  now-playing XML'i sanatçı ve parçayı ayrı alanlarda, albüm kapağıyla veriyor; ICY ise tek satır ("Sanatçı - Parça").
+- **Karar:** StreamTheWorld adresinden mount adı çıkarılır (`…/SUPER_FM.mp3` → `SUPER_FM`, `_SC` eki atılır) ve önce Triton sorulur.
+  Bilgi yoksa, parça süresi 2 dakikadan fazla geçmişse (araya reklam/program girmiş) ya da reklamsa ICY'ye düşülür.
+  İstasyonun varsayılan görseli kapak sayılmaz. Şema değişmedi: kaynak adresten anlaşılır, admin sağlık listesinde `metadataSource` olarak görünür.
+- **Sonuç:** Karnaval'da sanatçı eşleşmesi daha temiz, uygulama kapak gösterebilir (`track.cover`). Triton ortaklık/izin
+  konusu ADR-019 kapsamında; uç herkese açık ama koşulları değişebilir — ICY her zaman yedek.

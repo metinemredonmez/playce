@@ -37,6 +37,7 @@ Luca'dan (lucaevent) **bağımsız** bir projedir; kendi backend'i vardır.
 9. **`searchText` sütunlarına yazma** — DB tetikleyicisi doldurur (ADR-023). `normalize()` (`src/common/text.ts`)
    değişirse SQL'deki `playce_norm()` da yeni migration'la değişmeli.
 10. **Admin yazma uçlarına `@Audit('<tür>.<fiil>')`** ekle (AuditLog). Liste uçları `{ items, nextCursor }` döner.
+11. **Yeni serbest metin alanı** (etkinlik/mekân) eklenince `admin.service.ts`'teki `EVENT_TEXT` / `VENUE_TEXT`'e ekle: alkol denetimi (ADR-015) oradan geçer.
 
 ## Mobil notları
 - Expo API'leri her SDK'da değişir: kod yazmadan önce `https://docs.expo.dev/versions/v58.0.0/` oku

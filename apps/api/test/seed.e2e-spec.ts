@@ -1,6 +1,7 @@
 import { GENRES, seedBase, STATIONS, TAGS } from '../prisma/seed/base';
 import { seedDemo } from '../prisma/seed/demo';
 import { normalize } from '../src/common/text';
+import { alcoholFlags } from '../src/moderation/alcohol';
 import { createTestApp, resetDb, TestContext } from './utils';
 
 describe('seed ve arama normalizasyonu', () => {
@@ -43,6 +44,11 @@ describe('seed ve arama normalizasyonu', () => {
     expect(events.length).toBeGreaterThan(20);
     expect(events.every((e) => e.source === 'DEMO' && e.genres.length > 0 && e.artists.length > 0 && e.fanoutAt)).toBe(true);
     expect(events.filter((e) => e.priceFrom === 0).every((e) => e.isFree)).toBe(true);
+    // Demo içerik kendi alkol denetimimize takılmamalı
+    expect(events.filter((e) => alcoholFlags(e.title, e.description, e.totalPriceNote, e.refundPolicy).length).map((e) => e.title)).toEqual([]);
+    const venues = await ctx.prisma.venue.findMany({ include: { hours: true } });
+    expect(venues.filter((v) => alcoholFlags(v.name, v.description, v.doorPolicy, v.dressCode).length).map((v) => v.name)).toEqual([]);
+    expect(venues.find((v) => v.slug === 'blind')?.hours).toHaveLength(3);
   });
 
   it('veritabanı playce_norm() ile uygulama normalize() aynı sonucu verir', async () => {

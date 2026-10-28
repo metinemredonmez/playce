@@ -145,6 +145,35 @@ describe('etkinlikler', () => {
     expect((await ctx.http().get('/v1/events/acik-sahne')).body.ticketProvider).toBeNull();
   });
 
+  it('güven kutusu: satıcı, toplam fiyat notu, iade koşulu; yaş sınırı yoksa mekânınki', async () => {
+    await ctx.prisma.venue.update({ where: { id: seed.venue.id }, data: { ageLimit: 18, doorPolicy: 'Seçici kapı', dressCode: 'Spor ayakkabı kabul' } });
+    await ctx
+      .http()
+      .post('/v1/admin/events')
+      .set(admin)
+      .send({
+        title: 'Güvenli Gece',
+        slug: 'guvenli-gece',
+        startsAt: '2030-06-01T23:00:00+03:00',
+        venueSlug: 'blind',
+        priceFrom: 60_000,
+        sellerName: 'Örnek Organizasyon A.Ş.',
+        totalPriceNote: 'Hizmet bedeli dahil',
+        refundPolicy: 'Etkinlik iptalinde tam iade',
+      })
+      .expect(201);
+    const detail = (await ctx.http().get('/v1/events/guvenli-gece').expect(200)).body;
+    expect(detail).toMatchObject({
+      sellerName: 'Örnek Organizasyon A.Ş.',
+      totalPriceNote: 'Hizmet bedeli dahil',
+      refundPolicy: 'Etkinlik iptalinde tam iade',
+      ageLimit: 18,
+      venue: { doorPolicy: 'Seçici kapı', dressCode: 'Spor ayakkabı kabul', ageLimit: 18 },
+    });
+    await ctx.http().patch('/v1/admin/events/guvenli-gece').set(admin).send({ ageLimit: 21 }).expect(200);
+    expect((await ctx.http().get('/v1/events/guvenli-gece')).body.ageLimit).toBe(21);
+  });
+
   it('takvime ekle (.ics): RFC 5545 kaçış ve 75 bayt satır katlama', async () => {
     await ctx.prisma.event.create({
       data: {

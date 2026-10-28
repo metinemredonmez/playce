@@ -55,6 +55,12 @@ export function trHour(d: Date): number {
   return (d.getUTCHours() + 3) % 24;
 }
 
+/** İstanbul'da haftanın günü (0 = Pazar) ve gün içi dakika. */
+export function trWeekdayMinutes(d: Date): { weekday: number; minute: number } {
+  const l = new Date(d.getTime() + TR_OFFSET_MS);
+  return { weekday: l.getUTCDay(), minute: l.getUTCHours() * 60 + l.getUTCMinutes() };
+}
+
 /** İstanbul takvim günü "YYYY-MM-DD" (günlük sınırlar için). */
 export function trDateKey(d: Date): string {
   return new Date(d.getTime() + TR_OFFSET_MS).toISOString().slice(0, 10);

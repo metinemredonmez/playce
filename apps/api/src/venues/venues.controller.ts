@@ -14,8 +14,9 @@ export class VenuesController {
   @Get()
   @ApiQuery({ name: 'genre', required: false })
   @ApiQuery({ name: 'district', required: false, description: 'Semt slug ya da adı' })
-  list(@Query('genre') genre?: string, @Query('district') district?: string) {
-    return this.venues.list({ genre: genre || undefined, district: district || undefined });
+  @ApiQuery({ name: 'openNow', required: false, description: 'Yalnız şu an açık olanlar (1/true)' })
+  list(@Query('genre') genre?: string, @Query('district') district?: string, @Query('openNow') openNow?: string) {
+    return this.venues.list({ genre: genre || undefined, district: district || undefined, openNow: openNow === '1' || openNow === 'true' });
   }
 
   @Get(':slug')

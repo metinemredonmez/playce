@@ -27,16 +27,16 @@
 - [x] `stations`: saatlik sağlık işi, `status/failCount/lastError/codec/bitrate`; `DOWN` uygulamada (liste, arama, mekânın sesi) görünmez, `NO_METADATA` çalar ama "şu an çalan" sorulmaz; admin `stations/health` + `:slug/test`.
 - [x] `search`: `pg_trgm` + tetikleyiciyle tutulan `searchText`; `/v1/search` Türkçe karakter ve yazım hatası toleranslı (ADR-023).
 - [x] `events`: `REVIEW` durumu, `isFree/ageLimit/doorsAt/ticketProvider` (satıcı linkten çıkarılır), `/ics`, cursor sayfalama, `when=tomorrow`, `from/to`, `near`/`district`/`free`/`priceMax` filtreleri; `GET /v1/districts`.
-- [ ] `venues`: `VenueHours`, "şimdi açık", Google Place alanları, `Media`.
+- [ ] `venues`: ~~`VenueHours`, "şimdi açık"~~ ✅ (gece yarısını aşan saatler, `?openNow=1`, admin `PUT venues/:slug/hours`); Google Place alanları ve `Media` Faz 2'de (admin paneliyle).
 - [x] `admin`: ~~`X-Admin-Key` → JWT + roller~~ ✅ (key geçiş dönemi için duruyor); `AuditLog` (`@Audit()` + global interceptor, `GET /v1/admin/audit` ADMIN).
 - [x] `/v1` öneki (yayında eski sürüm olmadığı için yönlendirme gerekmedi; mobil güncellendi).
 - [x] Seed'i ikiye böl: `db:seed:base` (tür + etiket + istasyon, prod'da da çalışır) / `db:seed` (temel + demo, prod'da çalışmaz).
 - [x] Yerel türler (ADR-016): Türkçe Rap, Arabesk & Fantezi, Anadolu & Türkçe Rock, Fasıl & Türk Sanat (14 tür, 8 yeni istasyon); `TagGenreMap` ilk sürümü (~90 etiket).
-- [ ] `radio`: Karnaval istasyonları için Triton now-playing XML (sanatçı, parça, kapak); ICY'ye düşme.
-- [ ] Güven alanları (`sellerName`, `refundPolicy`, `doorPolicy`, `dressCode`) ve alkol anahtar kelime denetimi → `REVIEW` (ADR-015).
+- [x] `radio`: StreamTheWorld (Karnaval) yayınlarında Triton now-playing XML (sanatçı, parça, kapak); bilgi yoksa ya da eskiyse ICY'ye düşer (ADR-024).
+- [x] Güven alanları (`sellerName`, `totalPriceNote`, `refundPolicy`; mekânda `doorPolicy`, `dressCode`, `ageLimit`) ve alkol denetimi: işaretli etkinlik `REVIEW`'a düşer, işaretli mekân metni kaydedilmez, MODERATOR+ `allowFlagged` ile geçirir; `GET /v1/admin/events?status=REVIEW` (ADR-015).
 - [ ] `ingest:etkinlikio` (token gelince) ve Ticketmaster `countryCode=TR` deneme betiği.
 - [ ] **Yayın:** ~~VPS'te Postgres kullanıcı/DB, `playce-api` + `playce-worker` (pm2), nginx, gece `pg_dump`~~ ✅ 28 Eki — geçici `http://94.138.209.152:8888` ([09](09-yayin.md)). Kalan: alan adı + certbot (HTTPS), sunucu dışı yedek, Sentry, e-posta sağlayıcısı.
-- [x] e2e: auth, takip/kaydet, fan-out, bildirim, PlayLog, arama, istasyon sağlığı, etkinlik filtreleri, AuditLog, seed, discover (70 test).
+- [x] e2e: auth, takip/kaydet, fan-out, bildirim, PlayLog, arama, istasyon sağlığı, etkinlik filtreleri, AuditLog, seed, discover, mekân saatleri, Triton, alkol denetimi (85 test).
 
 ## Faz 2 — Admin paneli (Hafta 3–4)
 - [ ] `apps/admin` Next.js 15 + shadcn iskeleti, OTP girişi, rol bazlı menü.

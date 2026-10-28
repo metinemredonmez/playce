@@ -79,8 +79,23 @@ export type EventDetail = Omit<EventCard, 'venue'> & {
   status: 'PUBLISHED' | 'CANCELLED';
   doorsAt: string | null;
   ticketProvider: string | null;
-  venue: EventCard['venue'] & { address: string | null; coverUrl: string | null };
+  /** Güven kutusu (M17); ageLimit etkinlikte yoksa mekânınki */
+  sellerName: string | null;
+  totalPriceNote: string | null;
+  refundPolicy: string | null;
+  venue: EventCard['venue'] & {
+    address: string | null;
+    coverUrl: string | null;
+    ageLimit: number | null;
+    doorPolicy: string | null;
+    dressCode: string | null;
+  };
 };
+
+/** weekday: 0 = Pazar; kapanış açılıştan küçükse ertesi gün */
+export type VenueHours = { weekday: number; opensAt: string; closesAt: string };
+/** openNow null = saat bilgisi yok */
+export type OpenStatus = { openNow: boolean | null; openUntil: string | null };
 
 /** Cursor sayfalı liste yanıtı */
 export type Page<T> = { items: T[]; nextCursor: string | null };
@@ -91,11 +106,12 @@ export type VenueCard = {
   district: string;
   coverUrl: string | null;
   priceLevel: number | null;
+  ageLimit: number | null;
   source: Source;
   genres: GenreRef[];
   nextEvent: { slug: string; title: string; startsAt: string } | null;
   tonight: boolean;
-};
+} & OpenStatus;
 
 export type VenueDetail = {
   slug: string;
@@ -108,11 +124,16 @@ export type VenueDetail = {
   coverUrl: string | null;
   instagram: string | null;
   priceLevel: number | null;
+  ageLimit: number | null;
+  doorPolicy: string | null;
+  dressCode: string | null;
   source: Source;
   genres: GenreRef[];
+  /** Pazartesiden başlayarak */
+  hours: VenueHours[];
   events: EventCard[];
   sound: { id: string; name: string; streamUrl: string; hasMetadata: boolean; genre: string | null } | null;
-};
+} & OpenStatus;
 
 export type ArtistDetail = {
   slug: string;
@@ -123,7 +144,8 @@ export type ArtistDetail = {
   events: EventCard[];
 };
 
-export type Track = { raw: string | null; artist: string | null; title: string | null };
+/** cover: albüm kapağı (Karnaval istasyonlarında Triton'dan) */
+export type Track = { raw: string | null; artist: string | null; title: string | null; cover?: string | null };
 
 export type DiscoverNow = {
   track: Track;

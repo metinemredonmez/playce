@@ -84,7 +84,7 @@ için `X-Admin-Key`. Rol vermek için şimdilik: `UPDATE "User" SET role='ADMIN'
 | Uç | Ne yapar |
 |---|---|
 | `POST/PATCH/DELETE /v1/admin/events` | Etkinlik (`venueSlug`, `genreSlugs`, `artistSlugs` — ilk sanatçı headliner). Yayınlanınca worker takipçilere bildirir |
-| `POST/PATCH/DELETE /v1/admin/venues` | Mekân (+ türleri, konum) |
+| `POST/PATCH/DELETE /v1/admin/venues` · `PUT …/venues/:slug/hours` | Mekân (+ türleri, konum, yaş/kapı/kıyafet kuralı) ve haftalık çalışma saatleri (gece yarısını aşabilir) |
 | `POST/PATCH/DELETE /v1/admin/artists` | Sanatçı (+ `aliases`: radyo başlığındaki farklı yazılışlar) |
 | `POST/PATCH/DELETE /v1/admin/stations` | Küratörlü istasyon (yalnız HTTPS) |
 | `GET /v1/admin/unmatched` · `POST …/:key/{link,create,ignore}` | Radyoda çalıp veritabanında olmayan sanatçılar (en çok çalan üstte) |
@@ -93,6 +93,9 @@ için `X-Admin-Key`. Rol vermek için şimdilik: `UPDATE "User" SET role='ADMIN'
 
 Para kuruş cinsindendir: 450 TL = `45000`. `priceFrom: 0` girilirse etkinlik ücretsiz sayılır; bilet satıcısı
 (`ticketProvider`) verilmezse Biletix/Passo/Bubilet/Biletinial/Mobilet linkinden çıkarılır. `status: "REVIEW"` uygulamada görünmez.
+**Alkol mevzuatı (ADR-015):** başlık/açıklamada promosyon ("happy hour", "1 alana 1", bedava içki…) ya da alkol markası varsa
+etkinlik `REVIEW`'a düşer (`GET /v1/admin/events?status=REVIEW`), mekân metni kaydedilmez. Yanlış alarmı MODERATOR rolü
+`allowFlagged: true` ile geçirir.
 
 ## Demo verisi
 
@@ -117,7 +120,8 @@ Sunucuda başka projeler de var: **asla `pm2 restart all`**. Ayrıntı: [docs/09
 
 ## Bilinen sınırlar
 
-- HLS (`.m3u8`) yayınlarda "şu an çalan" bilgisi yok (Power Türk, Kral Pop, Radyo Eksen, TRT Türkü).
+- HLS (`.m3u8`) yayınlarda "şu an çalan" bilgisi yok (Power Türk, Kral Pop, Radyo Eksen, TRT Türkü). Karnaval istasyonlarında
+  parça bilgisi Triton'dan, albüm kapağıyla gelir (ADR-024).
 - Sanatçı eşleşmesi yalnız veritabanındaki sanatçılarla çalışır; kapsam büyüdükçe artar.
 - Mobil uygulamada giriş ekranı henüz yok (Faz 4); favoriler cihazda. Hesaba taşıma ucu hazır: `POST /v1/me/merge-device`.
 - Uygulama ikonu hâlâ Expo'nun varsayılanı.

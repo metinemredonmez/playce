@@ -1,15 +1,11 @@
 import { PlaylogService } from '../src/playlog/playlog.service';
-import { ADMIN_KEY, bearer, createTestApp, login, resetDb, seedBasics, TestContext } from './utils';
+import { ADMIN_KEY, createTestApp, loginAs, resetDb, seedBasics, TestContext } from './utils';
 
 describe('denetim kaydı (AuditLog)', () => {
   let ctx: TestContext;
   const admin = { 'X-Admin-Key': ADMIN_KEY };
 
-  const withRole = async (email: string, role: 'USER' | 'EDITOR' | 'ADMIN') => {
-    const t = await login(ctx, email);
-    await ctx.prisma.user.update({ where: { id: t.user.id }, data: { role } });
-    return { id: t.user.id, auth: bearer(t.accessToken) };
-  };
+  const withRole = (email: string, role: 'EDITOR' | 'ADMIN') => loginAs(ctx, email, role);
 
   beforeAll(async () => {
     ctx = await createTestApp();

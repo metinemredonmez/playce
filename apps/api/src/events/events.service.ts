@@ -105,8 +105,23 @@ export class EventsService {
         status: true,
         doorsAt: true,
         ticketProvider: true,
+        // Güven kutusu (M17): satıcı, toplam fiyat notu, iade koşulu + mekânın yaş/kapı/kıyafet kuralı
+        sellerName: true,
+        totalPriceNote: true,
+        refundPolicy: true,
         venue: {
-          select: { slug: true, name: true, district: true, address: true, lat: true, lng: true, coverUrl: true },
+          select: {
+            slug: true,
+            name: true,
+            district: true,
+            address: true,
+            lat: true,
+            lng: true,
+            coverUrl: true,
+            ageLimit: true,
+            doorPolicy: true,
+            dressCode: true,
+          },
         },
         artists: {
           orderBy: { sort: 'asc' },
@@ -115,7 +130,8 @@ export class EventsService {
       },
     });
     if (!e || !VISIBLE.includes(e.status)) throw new NotFoundException('Etkinlik bulunamadı');
-    return { ...e, artists: e.artists.map((a) => a.artist) };
+    // Etkinliğin yaş sınırı yoksa mekânınki geçerli (gece kulübü 18+)
+    return { ...e, ageLimit: e.ageLimit ?? e.venue.ageLimit, artists: e.artists.map((a) => a.artist) };
   }
 
   /** "Takvime ekle" (.ics) */

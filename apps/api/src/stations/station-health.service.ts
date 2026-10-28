@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Station, StationStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { RadioService } from '../radio/radio.service';
+import { RadioService, tritonMount } from '../radio/radio.service';
 import { forEachLimit } from '../common/async';
 
 /** Bu kadar ardışık başarısız kontrolden sonra istasyon DOWN olur ve uygulamada gizlenir. */
@@ -92,7 +92,13 @@ export class StationHealthService {
     const lastPlay = new Map(lastPlays.map((p) => [p.stationId, p._max.at]));
     const rank: Record<StationStatus, number> = { DOWN: 0, NO_METADATA: 1, OK: 2 };
     return stations
-      .map(({ id, genre, ...s }) => ({ ...s, genre: genre.slug, lastPlayAt: lastPlay.get(id) ?? null }))
+      .map(({ id, genre, ...s }) => ({
+        ...s,
+        genre: genre.slug,
+        // "Şu an çalan" kaynağı: Triton (kapaklı) > ICY > yok (HLS)
+        metadataSource: tritonMount(s.streamUrl) ? 'triton' : s.hasMetadata ? 'icy' : null,
+        lastPlayAt: lastPlay.get(id) ?? null,
+      }))
       .sort((a, b) => rank[a.status] - rank[b.status] || a.name.localeCompare(b.name, 'tr'));
   }
 }
