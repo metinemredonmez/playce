@@ -98,6 +98,29 @@ describe('PlayLog', () => {
     expect(await ctx.prisma.playLog.count({ where: { artistId: null } })).toBe(0);
   });
 
+  it('kuyrukta çaldığı istasyonlar ve önerilen türler; türlerle sanatçı açma; yoksayılanı geri alma', async () => {
+    await playlog.record(station, track('Oğuzhan Koç - Küsme Aşka'));
+    await playlog.record(station, track('Oğuzhan Koç - Yeni Parça'));
+    const [item] = (await ctx.http().get('/v1/admin/unmatched').set(admin).expect(200)).body;
+    expect(item).toMatchObject({
+      key: 'oguzhan koc',
+      plays: 2,
+      stations: [{ slug: 'rock-fm', name: 'Rock FM', genre: 'rock' }],
+      suggestedGenres: [{ slug: 'rock', name: 'Rock' }],
+    });
+
+    await ctx.http().post('/v1/admin/unmatched/oguzhan koc/create').set(admin).send({ genreSlugs: ['yok'] }).expect(400);
+    await ctx.http().post('/v1/admin/unmatched/oguzhan koc/create').set(admin).send({ genreSlugs: ['rock'] }).expect(201);
+    const artist = await ctx.prisma.artist.findUniqueOrThrow({ where: { slug: 'oguzhan-koc' }, include: { genres: true } });
+    expect(artist.genres.map((g) => g.slug)).toEqual(['rock']);
+
+    await playlog.record(station, track('100 BEST IBIZA - DEEP HOUSE 9'));
+    await ctx.http().post('/v1/admin/unmatched/100 best ibiza/ignore').set(admin).expect(200);
+    const back = await ctx.http().post('/v1/admin/unmatched/100 best ibiza/reopen').set(admin).expect(200);
+    expect(back.body.status).toBe('OPEN');
+    await ctx.http().post('/v1/admin/unmatched/oguzhan koc/reopen').set(admin).expect(400); // bağlanmış
+  });
+
   it('kuyruk uçları rol ister', async () => {
     const t = await login(ctx, 'kullanici@ornek.com');
     await ctx.http().get('/v1/admin/unmatched').expect(401);

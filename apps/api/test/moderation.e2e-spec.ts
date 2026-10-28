@@ -57,7 +57,11 @@ describe('admin moderasyon akışı', () => {
     expect(retry.body).toMatchObject({ status: 'REVIEW', moderation: { held: true } });
 
     const queue = (await ctx.http().get('/v1/admin/events').query({ status: 'REVIEW' }).set(editor.auth).expect(200)).body;
-    expect(queue.items).toEqual([expect.objectContaining({ slug: 'yaz-partisi', flags: ['happy hour'], venue: { slug: 'blind', name: 'Blind' } })]);
+    expect(queue.items).toEqual([
+      expect.objectContaining({ slug: 'yaz-partisi', flags: ['happy hour'], description: event().description, venue: { slug: 'blind', name: 'Blind' } }),
+    ]);
+    const queues = (await ctx.http().get('/v1/admin/queues').set(editor.auth).expect(200)).body;
+    expect(queues).toEqual({ reviewEvents: 1, unmatchedOpen: 0, stationsDown: 0 });
 
     const fixed = await ctx
       .http()

@@ -11,6 +11,7 @@
   "scripts": {
     "dev:api": "pnpm --filter @playce/api dev",
     "dev:worker": "pnpm --filter @playce/api dev:worker",
+    "dev:admin": "pnpm --filter @playce/admin dev",
     "dev:mobile": "pnpm --filter @playce/mobile start",
     "ios": "pnpm --filter @playce/mobile ios",
     "db:create": "createdb playce_dev || true",

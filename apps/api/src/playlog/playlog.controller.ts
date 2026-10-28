@@ -1,7 +1,7 @@
 import { Body, Controller, Get, HttpCode, Param, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiQuery, ApiSecurity, ApiTags } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsEnum, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min } from 'class-validator';
 import { UnmatchedStatus } from '@prisma/client';
 import { Public, Roles } from '../auth/decorators';
 import { Audit } from '../audit/audit.decorator';
@@ -20,6 +20,7 @@ class LinkDto {
 class CreateFromUnmatchedDto {
   @IsOptional() @IsString() @MaxLength(120) name?: string;
   @IsOptional() @Matches(SLUG_PATTERN) slug?: string;
+  @IsOptional() @IsArray() @ArrayMaxSize(5) @Matches(SLUG_PATTERN, { each: true }) genreSlugs?: string[];
 }
 
 @ApiTags('stations')
@@ -59,7 +60,14 @@ export class UnmatchedController {
   @Post(':key/create')
   @Audit('unmatched.create')
   create(@Param('key') key: string, @Body() dto: CreateFromUnmatchedDto) {
-    return this.playlog.createArtist(key, dto.name, dto.slug);
+    return this.playlog.createArtist(key, dto.name, dto.slug, dto.genreSlugs);
+  }
+
+  @Post(':key/reopen')
+  @Audit('unmatched.reopen')
+  @HttpCode(200)
+  reopen(@Param('key') key: string) {
+    return this.playlog.reopen(key);
   }
 
   @Post(':key/ignore')

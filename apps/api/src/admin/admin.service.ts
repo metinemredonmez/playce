@@ -79,6 +79,16 @@ export class AdminService {
     throw e;
   }
 
+  /** Panel menü rozetleri: bekleyen işler */
+  async queues() {
+    const [reviewEvents, unmatchedOpen, stationsDown] = await Promise.all([
+      this.prisma.event.count({ where: { status: 'REVIEW' } }),
+      this.prisma.unmatchedArtist.count({ where: { status: 'OPEN' } }),
+      this.prisma.station.count({ where: { status: 'DOWN' } }),
+    ]);
+    return { reviewEvents, unmatchedOpen, stationsDown };
+  }
+
   // ---- etkinlik ----
   async listEvents(q: AdminEventsQuery) {
     const take = q.limit ?? 50;
@@ -94,6 +104,7 @@ export class AdminService {
         status: true,
         source: true,
         startsAt: true,
+        coverUrl: true,
         description: true,
         sellerName: true,
         totalPriceNote: true,
@@ -101,9 +112,10 @@ export class AdminService {
         venue: { select: { slug: true, name: true } },
       },
     });
-    const items = rows.slice(0, take).map(({ description, sellerName, totalPriceNote, refundPolicy, ...e }) => ({
+    // Metin alanları da döner: panel moderasyonda düzeltip yeniden yayınlar.
+    const items = rows.slice(0, take).map((e) => ({
       ...e,
-      flags: alcoholFlags(e.title, description, sellerName, totalPriceNote, refundPolicy),
+      flags: alcoholFlags(e.title, e.description, e.sellerName, e.totalPriceNote, e.refundPolicy),
     }));
     return { items, nextCursor: rows.length > take ? items[items.length - 1].id : null };
   }

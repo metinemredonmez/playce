@@ -120,13 +120,45 @@ export class PlaylogService {
 
   // ---- admin: Eşleşmeyenler kuyruğu ----
 
-  unmatched(status: UnmatchedStatus = 'OPEN', limit = 50) {
-    return this.prisma.unmatchedArtist.findMany({
+  /**
+   * Kuyruk, çalma sayısına göre. Her kayıtta hangi istasyonlarda çaldığı (en çok 3) ve
+   * o istasyonların türleri — "sanatçı oluştur"da tür önerisi için.
+   */
+  async unmatched(status: UnmatchedStatus = 'OPEN', limit = 50) {
+    const items = await this.prisma.unmatchedArtist.findMany({
       where: { status },
       orderBy: [{ plays: 'desc' }, { lastSeenAt: 'desc' }],
       take: Math.min(Math.max(limit, 1), 200),
       include: { artist: { select: { slug: true, name: true } } },
     });
+    if (!items.length) return [];
+    const plays = await this.prisma.playLog.groupBy({
+      by: ['artistKey', 'stationId'],
+      where: { artistKey: { in: items.map((i) => i.key) } },
+      _count: { _all: true },
+    });
+    const stations = await this.prisma.station.findMany({
+      where: { id: { in: [...new Set(plays.map((p) => p.stationId))] } },
+      select: { id: true, slug: true, name: true, genre: { select: { slug: true, name: true } } },
+    });
+    const byId = new Map(stations.map((s) => [s.id, s]));
+    return items.map((item) => {
+      const top = plays
+        .filter((p) => p.artistKey === item.key)
+        .sort((a, b) => b._count._all - a._count._all)
+        .slice(0, 3)
+        .map((p) => byId.get(p.stationId))
+        .filter((s): s is NonNullable<typeof s> => !!s);
+      const genres = [...new Map(top.map((s) => [s.genre.slug, s.genre])).values()];
+      return { ...item, stations: top.map(({ id: _id, genre, ...s }) => ({ ...s, genre: genre.slug })), suggestedGenres: genres };
+    });
+  }
+
+  /** Yoksayılanı kuyruğa geri al (yanlışlıkla yoksayıldıysa). */
+  async reopen(key: string) {
+    const item = await this.unmatchedOr404(key);
+    if (item.status === 'LINKED') throw new BadRequestException('Bağlanmış kayıt geri alınamaz; sanatçıdan alias\'ı sil');
+    return this.prisma.unmatchedArtist.update({ where: { key }, data: { status: 'OPEN' } });
   }
 
   /** Mevcut sanatçıya bağla: yazılış alias olur, geçmiş çalmalar geriye dönük eşlenir. */
@@ -152,12 +184,20 @@ export class PlaylogService {
   }
 
   /** Kuyruktaki isimle yeni sanatçı aç ve bağla. */
-  async createArtist(key: string, name?: string, slug?: string) {
+  async createArtist(key: string, name?: string, slug?: string, genreSlugs: string[] = []) {
     const item = await this.unmatchedOr404(key);
     const displayName = name?.trim() || item.display;
+    const genres = await this.prisma.genre.findMany({ where: { slug: { in: genreSlugs } }, select: { id: true, slug: true } });
+    const missing = genreSlugs.filter((g) => !genres.some((r) => r.slug === g));
+    if (missing.length) throw new BadRequestException(`Bilinmeyen tür: ${missing.join(', ')}`);
     try {
       const artist = await this.prisma.artist.create({
-        data: { name: displayName, slug: slug ?? slugify(displayName), aliases: normalize(displayName) === key ? [] : [item.display] },
+        data: {
+          name: displayName,
+          slug: slug ?? slugify(displayName),
+          aliases: normalize(displayName) === key ? [] : [item.display],
+          genres: { connect: genres.map((g) => ({ id: g.id })) },
+        },
       });
       await this.prisma.$transaction(this.linkOps([key], artist.id));
       this.artists.invalidate();

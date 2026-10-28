@@ -16,3 +16,8 @@ apps/mobile/android/
 *.key
 *.mobileprovision
 expo-env.d.ts
+
+# next
+.next/
+next-env.d.ts
+*.tsbuildinfo

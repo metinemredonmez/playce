@@ -26,6 +26,9 @@ import {
 export class AdminController {
   constructor(private readonly admin: AdminService) {}
 
+  /** Bekleyen iş sayıları (panel menü rozetleri) */
+  @Get('queues') queues() { return this.admin.queues(); }
+
   /** Moderasyon kuyruğu: ?status=REVIEW — her öğede alkol denetimi bayrakları */
   @Get('events') listEvents(@Query() q: AdminEventsQuery) { return this.admin.listEvents(q); }
   @Post('events') @Audit('event.create') createEvent(@Body() dto: CreateEventDto, @CurrentUser() user: AuthUser) { return this.admin.createEvent(dto, user); }
